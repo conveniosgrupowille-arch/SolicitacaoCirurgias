@@ -1448,8 +1448,8 @@ window.addEventListener('unhandledrejection', function(ev){
 /* ---------- Conexão com o Supabase ----------
    Preencha com os dados do SEU projeto (Project Settings > API no painel do Supabase).
    A anon key é pública por natureza (roda no navegador) — não é secreta como a service_role key. */
-const SUPABASE_URL = 'COLOQUE_AQUI_A_URL_DO_SEU_PROJETO_SUPABASE';
-const SUPABASE_ANON_KEY = 'COLOQUE_AQUI_A_ANON_KEY_DO_SEU_PROJETO_SUPABASE';
+const SUPABASE_URL = 'https://bovqplebifaomulwxint.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_eMk33poZGRs9xWbmC2bHBA_BgzvOiuT';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let allEntriesCache = null;
