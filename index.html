@@ -1,0 +1,3475 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Registro de Cirurgias</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#F3F6F5;
+    --surface:#FFFFFF;
+    --ink:#182726;
+    --ink-muted:#5B6E6C;
+    --primary:#123B3A;
+    --primary-light:#1F5C58;
+    --accent:#C0873C;
+    --accent-soft:#F3E3CB;
+    --border:#DCE6E3;
+    --pending:#A85A3B;
+    --pending-bg:#FBEDE6;
+    --done:#3E7C5C;
+    --done-bg:#E7F2EC;
+    --radius:14px;
+    --shadow: 0 1px 2px rgba(18,59,58,0.05), 0 8px 24px -12px rgba(18,59,58,0.18);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    min-height:100vh;
+    padding:32px 16px 64px;
+  }
+  .wrap{max-width:640px;margin:0 auto;}
+
+  header{display:flex;align-items:center;gap:16px;margin-bottom:28px;}
+  .iris{
+    width:44px;height:44px;flex:none;border-radius:50%;
+    background:
+      radial-gradient(circle at 50% 50%, var(--primary) 0 6px, transparent 6.5px),
+      conic-gradient(from 0deg, var(--primary-light), var(--accent), var(--primary-light));
+    box-shadow: inset 0 0 0 3px var(--surface), 0 0 0 1px var(--border);
+  }
+  h1{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:26px;
+    margin:0;
+    letter-spacing:-0.01em;
+    color:var(--primary);
+  }
+  header p{margin:2px 0 0; font-size:13px; color:var(--ink-muted);}
+
+  nav.tabs{
+    display:flex;
+    flex-wrap:nowrap;
+    gap:4px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:999px;
+    padding:4px;
+    margin-bottom:24px;
+    box-shadow:var(--shadow);
+  }
+  nav.tabs button{
+    flex:1;
+    min-width:0;
+    border:none;
+    background:transparent;
+    padding:10px 4px;
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:11px;
+    color:var(--ink-muted);
+    border-radius:999px;
+    cursor:pointer;
+    transition:background .15s, color .15s;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  nav.tabs button.active{
+    background:var(--primary);
+    color:#fff;
+  }
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:28px;
+    box-shadow:var(--shadow);
+  }
+
+  .doctor-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+  }
+  .doctor-card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:20px 16px;
+    box-shadow:var(--shadow);
+    cursor:pointer;
+    text-align:left;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    transition:transform .12s, border-color .12s;
+  }
+  .doctor-card:hover{transform:translateY(-2px); border-color:var(--primary-light);}
+  .doctor-avatar{
+    width:40px;height:40px;
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:15px;
+    color:#fff;
+  }
+  .doctor-name{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:15.5px;
+    color:var(--primary);
+    line-height:1.25;
+  }
+  .doctor-cta{
+    font-size:12px;
+    font-weight:600;
+    color:var(--ink-muted);
+    display:flex;
+    align-items:center;
+    gap:4px;
+    background:none;
+    border:none;
+    padding:0;
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+  }
+  .doctor-cta:hover{color:var(--primary);}
+  .doctor-cta.secondary{
+    color:var(--accent);
+    margin-top:2px;
+  }
+  .doctor-cta.secondary:hover{color:var(--primary);}
+
+  .back-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:18px;
+  }
+  .back-btn{
+    border:1px solid var(--border);
+    background:var(--surface);
+    color:var(--primary);
+    width:34px;height:34px;
+    border-radius:9px;
+    cursor:pointer;
+    font-size:16px;
+    display:flex;align-items:center;justify-content:center;
+    flex:none;
+  }
+  .back-row .doctor-avatar{width:34px;height:34px;font-size:13px;}
+  .back-row .form-doctor-name{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:18px;
+    color:var(--primary);
+  }
+  .back-row .form-doctor-sub{
+    font-size:12px;
+    color:var(--ink-muted);
+  }
+
+  .field{margin-bottom:20px;}
+  .field:last-child{margin-bottom:0;}
+  label{
+    display:block;
+    font-size:13px;
+    font-weight:600;
+    color:var(--primary);
+    margin-bottom:6px;
+  }
+  label .opt{
+    font-weight:400;
+    color:var(--ink-muted);
+    font-size:12px;
+  }
+  .required-mark{
+    color:#C0392B;
+    font-weight:700;
+    margin-left:2px;
+  }
+  input[type=text], input[type=date], select, textarea{
+    width:100%;
+    font-family:'Inter',sans-serif;
+    font-size:14.5px;
+    color:var(--ink);
+    background:#FBFCFC;
+    border:1px solid var(--border);
+    border-radius:9px;
+    padding:11px 12px;
+    outline:none;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  input:focus, select:focus, textarea:focus{
+    border-color:var(--primary-light);
+    box-shadow:0 0 0 3px rgba(31,92,88,0.14);
+  }
+  textarea{resize:vertical; min-height:80px;}
+
+  .field-invalid{
+    border-color:#C0392B !important;
+    background:#FDEEEC !important;
+    box-shadow:0 0 0 3px rgba(192,57,43,0.14) !important;
+  }
+  .field-invalid-label{
+    color:#C0392B !important;
+  }
+  .multiselect-trigger.field-invalid{
+    border-color:#C0392B !important;
+    background:#FDEEEC !important;
+  }
+  .eye-group.field-invalid{
+    border:1px solid #C0392B;
+    border-radius:10px;
+    padding:4px;
+    background:#FDEEEC;
+  }
+
+  .eye-group{display:flex; gap:8px;}
+  .eye-option{flex:1;}
+  .eye-option input{position:absolute; opacity:0; pointer-events:none;}
+  .eye-option label{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    margin:0;
+    padding:12px 0;
+    border:1px solid var(--border);
+    border-radius:9px;
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:500;
+    font-size:14px;
+    color:var(--ink-muted);
+    cursor:pointer;
+    transition:all .15s;
+  }
+  .eye-option input:checked + label{
+    border-color:var(--primary);
+    background:var(--primary);
+    color:#fff;
+  }
+
+  button.submit{
+    width:100%;
+    margin-top:24px;
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    padding:14px;
+    border-radius:9px;
+    font-family:'Inter',sans-serif;
+    font-weight:700;
+    font-size:14.5px;
+    cursor:pointer;
+    transition:filter .15s, transform .1s;
+  }
+  button.submit:hover{filter:brightness(1.05);}
+  button.submit:active{transform:scale(0.99);}
+
+  .toast{
+    position:fixed;
+    bottom:calc(24px + env(safe-area-inset-bottom, 0px));
+    left:50%;
+    max-width:calc(100vw - 32px);
+    transform:translateX(-50%) translateY(120%);
+    background:var(--primary);
+    color:#fff;
+    padding:12px 20px;
+    border-radius:999px;
+    font-size:13.5px;
+    font-weight:600;
+    text-align:center;
+    box-shadow:var(--shadow);
+    transition:transform .25s ease;
+    z-index:1000;
+  }
+  .toast.show{transform:translateX(-50%) translateY(0);}
+
+  .respostas-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:16px;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .respostas-head h2{
+    font-family:'Fraunces',serif;
+    font-size:18px;
+    margin:0;
+    color:var(--primary);
+  }
+  .actions{display:flex; gap:8px;}
+  .btn-small{
+    border:1px solid var(--border);
+    background:var(--surface);
+    color:var(--primary);
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:12.5px;
+    padding:8px 14px;
+    border-radius:8px;
+    cursor:pointer;
+    transition:background .15s;
+  }
+  .btn-small:hover{background:var(--accent-soft);}
+  .btn-small.primary{
+    background:var(--primary);
+    color:#fff;
+    border-color:var(--primary);
+  }
+  .btn-small.primary:hover{background:var(--primary-light);}
+  .btn-small.danger{
+    color:var(--pending);
+    border-color:var(--pending-bg);
+  }
+  .btn-small.danger:hover{background:var(--pending-bg);}
+
+  .empty{
+    text-align:center;
+    padding:48px 16px;
+    color:var(--ink-muted);
+    font-size:14px;
+  }
+
+  .entry{
+    border:1px solid var(--border);
+    border-radius:11px;
+    padding:16px 18px;
+    margin-bottom:12px;
+    background:#FBFCFC;
+  }
+  .entry-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:8px;
+    margin-bottom:10px;
+  }
+  .entry-top-clickable{
+    cursor:pointer;
+    margin-bottom:0;
+    padding:2px 0;
+    align-items:center;
+  }
+  .entry-top-clickable:hover .entry-medico{ color:var(--primary-light); }
+  .entry-toggle-arrow{
+    font-size:14px;
+    color:var(--ink-muted);
+    margin-left:4px;
+    flex:none;
+  }
+  .entry-details{
+    padding-top:10px;
+    margin-top:10px;
+    border-top:1px solid var(--border);
+  }
+  .entry-medico{
+    font-weight:700;
+    font-size:14.5px;
+    color:var(--primary);
+  }
+  .entry-date{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--ink-muted);
+  }
+  .entry-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:6px 16px;
+    font-size:13px;
+    margin-bottom:10px;
+  }
+  .entry-grid div span.k{
+    display:block;
+    color:var(--ink-muted);
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.03em;
+  }
+  .entry-obs{
+    font-size:13px;
+    color:var(--ink);
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:8px 10px;
+    margin-bottom:10px;
+  }
+  .anexos-instrucoes{
+    font-size:12px;
+    font-weight:600;
+    color:var(--primary-light);
+    background:var(--accent-soft);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:8px 10px;
+    margin-bottom:8px;
+    line-height:1.5;
+  }
+  .guia-foto-thumb.is-file{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:2px;
+    font-size:9px;
+    font-weight:700;
+    color:var(--primary-light);
+    text-align:center;
+    padding:4px;
+  }
+  .guia-foto-thumb.is-file .ext{
+    font-size:13px;
+  }
+  .guia-foto-thumb.is-file .fname{
+    font-size:8px;
+    font-weight:500;
+    color:var(--ink-muted);
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    max-width:56px;
+  }
+  .guia-fotos-preview{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-top:10px;
+  }
+  .guia-foto-thumb{
+    position:relative;
+    width:64px;
+    height:64px;
+    border-radius:8px;
+    overflow:hidden;
+    border:1px solid var(--border);
+    background:var(--bg);
+  }
+  .guia-foto-thumb img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+    cursor:pointer;
+  }
+  .guia-foto-thumb .remove-foto{
+    position:absolute;
+    top:2px;
+    right:2px;
+    width:18px;
+    height:18px;
+    border-radius:50%;
+    background:rgba(24,39,38,0.72);
+    color:#fff;
+    border:none;
+    font-size:11px;
+    line-height:18px;
+    text-align:center;
+    cursor:pointer;
+    padding:0;
+  }
+  .guia-fotos-btn{
+    font-family:'Inter',sans-serif;
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--primary-light);
+    background:none;
+    border:none;
+    cursor:pointer;
+    padding:0;
+    margin-top:4px;
+  }
+  .guia-fotos-btn:hover{ text-decoration:underline; }
+  .download-gate-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(18,39,38,0.55);
+    z-index:2000;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+  .download-gate-box{
+    background:var(--surface);
+    border-radius:var(--radius);
+    padding:24px;
+    max-width:320px;
+    width:100%;
+    box-shadow:var(--shadow);
+  }
+  .download-gate-title{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:17px;
+    color:var(--primary);
+    margin-bottom:8px;
+  }
+  .download-gate-text{
+    font-size:12.5px;
+    color:var(--ink-muted);
+    margin:0 0 14px;
+    line-height:1.5;
+  }
+  .download-gate-box input{
+    width:100%;
+    margin-bottom:14px;
+  }
+  .download-gate-actions{
+    display:flex;
+    gap:8px;
+    justify-content:flex-end;
+  }
+  .cpf-toggle-btn{
+    flex:none;
+    width:38px;
+    height:38px;
+    border:1px solid var(--border);
+    background:var(--surface);
+    border-radius:9px;
+    cursor:pointer;
+    font-size:15px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .cpf-toggle-btn:hover{ background:var(--bg); }
+  .agenda-panel{
+    border-top:1px dashed var(--border);
+    margin-top:10px;
+    padding-top:10px;
+  }
+  .agenda-title{
+    font-size:12.5px;
+    font-weight:700;
+    color:var(--primary);
+    letter-spacing:0.01em;
+  }
+  .agenda-section-title{
+    font-size:11px;
+    font-weight:700;
+    color:var(--primary-light);
+    text-transform:uppercase;
+    letter-spacing:0.03em;
+    margin-top:14px;
+    margin-bottom:6px;
+  }
+  .agenda-summary{
+    font-size:12.5px;
+    color:var(--ink-muted);
+    background:var(--bg);
+    border:1px dashed var(--border);
+    border-radius:8px;
+    padding:8px 10px;
+    margin-top:8px;
+    line-height:1.6;
+  }
+  .agenda-summary b{ color:var(--ink); }
+  .field-row{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-top:8px;
+  }
+  .field-col{
+    flex:1;
+    min-width:100px;
+  }
+  .field-col.wide{ flex:2; min-width:160px; }
+  .field-col label{
+    display:block;
+    font-size:11px;
+    font-weight:600;
+    color:var(--ink-muted);
+    margin-bottom:3px;
+  }
+  .field-col input, .field-col select, .field-col textarea{
+    width:100%;
+    padding:6px 8px;
+    font-size:12.5px;
+    border:1px solid var(--border);
+    border-radius:6px;
+    background:var(--surface);
+    font-family:'Inter',sans-serif;
+    color:var(--ink);
+    box-sizing:border-box;
+  }
+  .field-col textarea{ min-height:52px; resize:vertical; }
+  .agenda-checkline{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-size:12px;
+    color:var(--ink-muted);
+    margin-top:8px;
+  }
+  .agenda-alert{
+    font-size:11.5px;
+    color:var(--pending);
+    background:var(--pending-bg);
+    border:1px solid var(--pending);
+    border-radius:8px;
+    padding:10px;
+    margin-top:14px;
+    line-height:1.6;
+  }
+  .agenda-alert b{ display:block; margin-bottom:4px; }
+  .status-row{display:flex; align-items:center; gap:8px;}
+  .status-row select{
+    width:auto;
+    padding:6px 10px;
+    font-size:12.5px;
+    font-weight:600;
+  }
+  .badge{
+    display:inline-block;
+    padding:3px 10px;
+    border-radius:999px;
+    font-size:11.5px;
+    font-weight:700;
+  }
+  .badge.pendente{background:var(--pending-bg); color:var(--pending);}
+  .badge.acertado{background:var(--done-bg); color:var(--done);}
+  .badge.st-aguardando_autorizacao{background:var(--pending-bg); color:var(--pending);}
+  .badge.st-autorizada{background:#E4EAF3; color:#4A5C7B;}
+  .badge.st-concluida{background:var(--accent-soft); color:#8B6F2F;}
+  .badge.st-paga{background:var(--done-bg); color:var(--done);}
+  .badge.st-pagamento_efetuado{background:var(--done); color:#fff;}
+
+  .identity-bar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    margin:-14px 0 20px;
+    font-size:12.5px;
+  }
+  .identity-pill{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:999px;
+    padding:6px 8px 6px 6px;
+  }
+  .identity-pill .dot{
+    width:22px;height:22px;border-radius:50%;
+    background:var(--primary);
+    color:#fff;
+    font-size:10.5px;
+    font-weight:700;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'IBM Plex Mono',monospace;
+  }
+  .identity-pill span.who{color:var(--ink-muted);}
+  .identity-pill b{color:var(--primary);}
+  .identity-edit{
+    background:none;
+    border:none;
+    color:var(--ink-muted);
+    font-size:11.5px;
+    text-decoration:underline;
+    cursor:pointer;
+    padding:4px;
+  }
+  .identity-form{
+    display:flex;
+    gap:6px;
+    width:100%;
+    flex-wrap:nowrap;
+  }
+  .identity-form input, .identity-form select{
+    font-size:12.5px;
+    padding:9px 8px;
+    min-width:0;
+  }
+  .identity-form select#loginSelect{flex:1.4;}
+  .identity-form input#loginPassword{flex:1; width:0;}
+  .identity-form button{
+    background:var(--primary);
+    color:#fff;
+    border:none;
+    border-radius:9px;
+    padding:0 12px;
+    font-weight:600;
+    font-size:12.5px;
+    flex:none;
+    white-space:nowrap;
+    cursor:pointer;
+  }
+  .identity-hint{
+    width:100%;
+    font-size:11px;
+    color:var(--ink-muted);
+  }
+  .entry.readonly{background:var(--surface);}
+  .filter-row{
+    display:flex;
+    gap:6px;
+    margin-bottom:16px;
+    flex-wrap:wrap;
+  }
+  .filter-chip{
+    border:1px solid var(--border);
+    background:var(--surface);
+    color:var(--ink-muted);
+    font-size:12px;
+    font-weight:600;
+    padding:6px 12px;
+    border-radius:999px;
+    cursor:pointer;
+  }
+  .filter-chip.active{
+    background:var(--primary);
+    color:#fff;
+    border-color:var(--primary);
+  }
+
+  .fin-filters{
+    display:flex;
+    gap:8px;
+    margin-bottom:18px;
+    flex-wrap:wrap;
+  }
+  .fin-filters select, .fin-filters input{
+    flex:1;
+    min-width:140px;
+  }
+  .fin-summary{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-bottom:20px;
+  }
+  .fin-card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:16px 18px;
+    box-shadow:var(--shadow);
+  }
+  .fin-card .fin-label{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    color:var(--ink-muted);
+    margin-bottom:6px;
+  }
+  .fin-card .fin-value{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:22px;
+    color:var(--primary);
+  }
+  .fin-card.total .fin-value{color:var(--accent);}
+  .fin-card.pendente .fin-value{color:var(--pending);}
+  .valor-field{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    margin-top:8px;
+    flex-wrap:wrap;
+  }
+  .valor-field label{
+    margin:0;
+    font-size:12px;
+    font-weight:600;
+    color:var(--ink-muted);
+    white-space:nowrap;
+  }
+  .valor-field input{
+    width:100px;
+    padding:6px 8px;
+    font-size:13px;
+    font-family:'IBM Plex Mono',monospace;
+  }
+  .valor-liquido{
+    width:100%;
+    font-size:12.5px;
+    font-weight:700;
+    color:var(--primary);
+    margin-top:2px;
+  }
+  .split-row{
+    width:100%;
+    margin-top:10px;
+    padding-top:10px;
+    border-top:1px dashed var(--border);
+  }
+  .split-check{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:12.5px;
+    font-weight:500;
+    color:var(--ink);
+    margin-bottom:6px;
+    cursor:pointer;
+  }
+  .split-check input{width:auto;}
+  .split-hint{
+    font-size:11.5px;
+    color:var(--ink-muted);
+    font-style:italic;
+    margin-top:4px;
+  }
+  .multiselect{
+    position:relative;
+  }
+  .multiselect-trigger{
+    width:100%;
+    text-align:left;
+    font-family:'Inter',sans-serif;
+    font-size:14.5px;
+    color:var(--ink);
+    background:#FBFCFC;
+    border:1px solid var(--border);
+    border-radius:9px;
+    padding:11px 12px;
+    cursor:pointer;
+  }
+  .multiselect-trigger:focus{
+    border-color:var(--primary-light);
+    box-shadow:0 0 0 3px rgba(31,92,88,0.14);
+    outline:none;
+  }
+  .multiselect-panel{
+    position:absolute;
+    z-index:30;
+    top:calc(100% + 6px);
+    left:0;
+    right:0;
+    max-height:280px;
+    overflow-y:auto;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:9px;
+    box-shadow:var(--shadow);
+    padding:12px;
+  }
+  .pdf-btn{
+    width:100%;
+    margin-top:4px;
+    background:var(--primary);
+    color:#fff;
+    border:none;
+    padding:13px;
+    border-radius:9px;
+    font-family:'Inter',sans-serif;
+    font-weight:700;
+    font-size:14px;
+    cursor:pointer;
+  }
+  .pdf-btn:hover{background:var(--primary-light);}
+  .pdf-btn:disabled{opacity:.55; cursor:default;}
+
+  .fin-gate{
+    text-align:center;
+    padding:32px 16px;
+  }
+  .fin-gate .lock{
+    width:44px;height:44px;
+    margin:0 auto 14px;
+    border-radius:50%;
+    background:var(--primary);
+    color:#fff;
+    display:flex;align-items:center;justify-content:center;
+    font-size:18px;
+  }
+  .fin-gate p{
+    font-size:13px;
+    color:var(--ink-muted);
+    margin:0 0 16px;
+  }
+  .fin-gate form{
+    display:flex;
+    gap:8px;
+    max-width:260px;
+    margin:0 auto;
+  }
+  .fin-gate input{
+    flex:1;
+    text-align:center;
+    letter-spacing:3px;
+    font-family:'IBM Plex Mono',monospace;
+  }
+  .fin-gate button{
+    background:var(--primary);
+    color:#fff;
+    border:none;
+    border-radius:9px;
+    padding:0 16px;
+    font-weight:600;
+    font-size:13px;
+    cursor:pointer;
+  }
+
+  footer{
+    text-align:center;
+    margin-top:24px;
+    font-size:11.5px;
+    color:var(--ink-muted);
+  }
+  @media print{
+    .no-print, .no-print *{ display:none !important; }
+    body{ background:#fff; padding:0; }
+    .wrap{ max-width:100%; }
+    .card, .entry{ box-shadow:none; border:1px solid #ccc; break-inside:avoid; }
+    .doctor-grid{ display:none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="iris"></div>
+    <div>
+      <h1>Registro de Cirurgias</h1>
+      <p>Solicitação de acerto médico</p>
+    </div>
+  </header>
+
+  <nav class="tabs no-print">
+    <button id="tab-historico-btn" class="active">Solicitadas</button>
+    <button id="tab-autorizacao-btn">Autorização</button>
+    <button id="tab-faturamento-btn">Faturamento</button>
+    <button id="tab-fin-btn">Financeiro</button>
+  </nav>
+
+  <div id="view-home">
+    <div id="loginGate-home" class="no-print"></div>
+    <div id="identityStatus-home" class="no-print"></div>
+    <div class="doctor-grid" id="doctorGrid"><div class="empty" style="grid-column:1/-1;">Carregando…</div></div>
+    <div id="hubAccessRow" style="text-align:center; margin-top:16px;">
+      <button type="button" class="identity-edit" id="hubAccessLink">Acesso HUB (Autorização / Faturamento / Financeiro)</button>
+    </div>
+  </div>
+
+  <div id="view-form" style="display:none;">
+    <div class="back-row">
+      <button class="back-btn" id="backBtn">←</button>
+      <div class="doctor-avatar" id="formAvatar"></div>
+      <div>
+        <div class="form-doctor-name" id="formDoctorName"></div>
+        <div class="form-doctor-sub" id="formDoctorSub">Novo registro de cirurgia</div>
+      </div>
+    </div>
+    <div class="card">
+      <form id="surgeryForm">
+        <div class="field" style="display:flex; gap:8px; flex-wrap:wrap;">
+          <div style="flex:1; min-width:118px;">
+            <label for="dataSolicitacao">Data da solicitação<span class="required-mark">*</span></label>
+            <input type="date" id="dataSolicitacao">
+          </div>
+          <div style="flex:1.3; min-width:110px;">
+            <label for="numeroGuia">Nº da guia <span class="opt">(opcional)</span></label>
+            <input type="text" id="numeroGuia" placeholder="Número">
+          </div>
+          <div style="flex:0.8; min-width:80px;">
+            <label for="senhaGuia">Senha <span class="opt">(opcional)</span></label>
+            <input type="text" id="senhaGuia" placeholder="Senha">
+          </div>
+          <div style="flex:1; min-width:118px;">
+            <label for="validadeGuia">Validade <span class="opt">(opcional)</span></label>
+            <input type="date" id="validadeGuia">
+          </div>
+        </div>
+
+        <div class="field" style="display:flex; gap:10px;">
+          <div style="flex:1.4; min-width:0;">
+            <label for="convenio">Convênio<span class="required-mark">*</span></label>
+            <input type="text" id="convenio" list="convenioList" placeholder="Nome do convênio" autocomplete="off">
+            <datalist id="convenioList">
+              <option>Unimed</option>
+              <option>SC Saude</option>
+              <option>Saúde Bradesco</option>
+              <option>Levmed</option>
+              <option>Mediservice</option>
+              <option>Nossa Saude</option>
+              <option>Saude Caixa</option>
+              <option>Postal Saude</option>
+              <option>Select</option>
+              <option>Sind.Dos Trans</option>
+              <option>Social</option>
+              <option>Particular</option>
+              <option>Cortesia</option>
+            </datalist>
+          </div>
+          <div style="flex:1; min-width:0;">
+            <label for="carteirinha">Carteirinha do paciente <span class="opt">(opcional)</span></label>
+            <input type="text" id="carteirinha" placeholder="Nº da carteirinha">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="paciente">Nome do paciente<span class="required-mark">*</span></label>
+          <input type="text" id="paciente" placeholder="Nome completo">
+        </div>
+
+        <div class="field">
+          <label for="procedimentoTrigger">Procedimento<span class="required-mark">*</span> <span class="opt">(um ou mais)</span></label>
+          <div class="multiselect" id="procedimentoMultiselect">
+            <button type="button" class="multiselect-trigger" id="procedimentoTrigger">Selecione…</button>
+            <div class="multiselect-panel" id="procedimentoPanel" style="display:none;">
+              <input type="text" id="procedimentoSearch" placeholder="Digite o código ou nome pra filtrar…" style="margin-bottom:10px;" autocomplete="off">
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30301017 - Abscesso de pálpebra - drenagem">
+                30301017 - Abscesso de pálpebra - drenagem
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30301041 - Calázio - exérese">
+                30301041 - Calázio - exérese
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30301084 - Correção cirúrgica de ectrópio ou entrópio">
+                30301084 - Correção cirúrgica de ectrópio ou entrópio
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30301157 - Lagoftalmo - correção cirúrgica">
+                30301157 - Lagoftalmo - correção cirúrgica
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30301165 - Pálpebra - reconstrução parcial (com ou sem ressecção de tumor)">
+                30301165 - Pálpebra - reconstrução parcial (com ou sem ressecção de tumor)
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30301173 - Pálpebra - reconstrução total (com ou sem ressecção de tumor) - por estágio">
+                30301173 - Pálpebra - reconstrução total (com ou sem ressecção de tumor) - por estágio
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30301181 - Ptose palpebral - correção cirúrgica - unilateral">
+                30301181 - Ptose palpebral - correção cirúrgica - unilateral
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30301190 - Ressecção de tumores palpebrais">
+                30301190 - Ressecção de tumores palpebrais
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30301211 - Simbléfaro com ou sem enxerto - correção cirúrgica">
+                30301211 - Simbléfaro com ou sem enxerto - correção cirúrgica
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30301238 - Sutura de pálpebra">
+                30301238 - Sutura de pálpebra
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30301262 - Triquíase com ou sem enxerto">
+                30301262 - Triquíase com ou sem enxerto
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30302056 - Exérese de tumor com abordagem craniofacial oncológica (tempo facial) pálpebra. cavidade orbitária e olhos">
+                30302056 - Exérese de tumor com abordagem craniofacial oncológica (tempo facial) pálpebra. cavidade orbitária e olhos
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30302102 - Reconstituição de paredes orbitárias">
+                30302102 - Reconstituição de paredes orbitárias
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30302137 - Tumor de órbita - exérese">
+                30302137 - Tumor de órbita - exérese
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30303010 - Autotransplante conjuntival">
+                30303010 - Autotransplante conjuntival
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30303044 - Infiltração subconjuntival">
+                30303044 - Infiltração subconjuntival
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30303060 - Pterígio - exérese">
+                30303060 - Pterígio - exérese
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30303087 - Sutura de conjuntiva">
+                30303087 - Sutura de conjuntiva
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30303109 - Tumor de conjuntiva - exérese">
+                30303109 - Tumor de conjuntiva - exérese
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30304024 - Ceratectomia superficial - monocular">
+                30304024 - Ceratectomia superficial - monocular
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30304040 - PTK ceratectomia fototerapêutica - monocular">
+                30304040 - PTK ceratectomia fototerapêutica - monocular
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30304059 - Recobrimento conjuntival">
+                30304059 - Recobrimento conjuntival
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30304067 - Sutura de córnea (com ou sem hérnia de íris)">
+                30304067 - Sutura de córnea (com ou sem hérnia de íris)
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30304083 - Implante de anel intraestromal (com diretriz de utilização definida pela ANS)DUT34">
+                30304083 - Implante de anel intraestromal (com diretriz de utilização definida pela ANS)DUT34
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30304091 - Fotoablacao de superficie convencional PRK (com diretriz de utilização definida pela ANS)DUT13">
+                30304091 - Fotoablacao de superficie convencional PRK (com diretriz de utilização definida pela ANS)DUT13
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30304105 - Delaminação corneana com fotoablação estromal LASIK (com diretriz de utilização definida pela ANS)DUT13">
+                30304105 - Delaminação corneana com fotoablação estromal LASIK (com diretriz de utilização definida pela ANS)DUT13
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30304156 - CrossLinking (Cxl) De Colágeno Corneano (Nomenclatura Proposta Pelo Cbo Seguindo Descrição/Sigla Internacional) (Com Diretriz Definida Pela ANS)DUT121">
+                30304156 - CrossLinking (Cxl) De Colágeno Corneano (Nomenclatura Proposta Pelo Cbo Seguindo Descrição/Sigla Internacional) (Com Diretriz Definida Pela ANS)DUT121
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30305012 - Paracentese da câmara anterior">
+                30305012 - Paracentese da câmara anterior
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30305020 - Reconstrução da câmara anterior">
+                30305020 - Reconstrução da câmara anterior
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30305047 - Retirada de corpo estranho da câmara anterior">
+                30305047 - Retirada de corpo estranho da câmara anterior
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30306027 - Facectomia com lente intra-ocular com facoemulsificação">
+                30306027 - Facectomia com lente intra-ocular com facoemulsificação
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30306035 - Facectomia com lente intra-ocular sem facoemulsificação">
+                30306035 - Facectomia com lente intra-ocular sem facoemulsificação
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30306043 - Facectomia sem implante">
+                30306043 - Facectomia sem implante
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30306051 - Fixação iriana de lente intra-ocular">
+                30306051 - Fixação iriana de lente intra-ocular
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30306060 - Implante secundário / explante / fixação escleral ou iriana">
+                30306060 - Implante secundário / explante / fixação escleral ou iriana
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30307031 - Endolaser/Endodiatermia">
+                30307031 - Endolaser/Endodiatermia
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30307040 - Implante de silicone intravítreo">
+                30307040 - Implante de silicone intravítreo
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30307066 - Membranectomia EPI ou sub-retiniana">
+                30307066 - Membranectomia EPI ou sub-retiniana
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30307074 - Retirada de corpo estranho do corpo vítreo">
+                30307074 - Retirada de corpo estranho do corpo vítreo
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30307082 - Retirada de óleo de silicone via pars plana">
+                30307082 - Retirada de óleo de silicone via pars plana
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30307090 - Troca fluido gasosa">
+                30307090 - Troca fluido gasosa
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30307104 - Vitrectomia a céu aberto - ceratoprótese">
+                30307104 - Vitrectomia a céu aberto - ceratoprótese
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30307112 - Vitrectomia anterior">
+                30307112 - Vitrectomia anterior
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30307120 - Vitrectomia vias pars plana">
+                30307120 - Vitrectomia vias pars plana
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30307139 - Infusão Intravítrea de medicamento anti-inflamatório (com diretriz definida pela ANS - nº 74)">
+                30307139 - Infusão Intravítrea de medicamento anti-inflamatório (com diretriz definida pela ANS - nº 74)
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30307147 - Tratamento ocular quimioterápico com anti-angiogênico (por sessão) (Com diretriz definida pela ANS)DUT74">
+                30307147 - Tratamento ocular quimioterápico com anti-angiogênico (por sessão) (Com diretriz definida pela ANS)DUT74
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30308038 - Sutura de esclera">
+                30308038 - Sutura de esclera
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30309018 - Enucleação ou evisceração com ou sem implante">
+                30309018 - Enucleação ou evisceração com ou sem implante
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30309026 - Injeção retrobulbar">
+                30309026 - Injeção retrobulbar
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30310032 - Cirurgias fistulizantes antiglaucomatosas">
+                30310032 - Cirurgias fistulizantes antiglaucomatosas
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30310040 - Cirurgia fistulizante com implante de drenagem">
+                30310040 - Cirurgia fistulizante com implante de drenagem
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30311039 - Estrabismo ciclo vertical/transposição - monocular - tratamento cirúrgico">
+                30311039 - Estrabismo ciclo vertical/transposição - monocular - tratamento cirúrgico
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30311047 - Estrabismo horizontal - monocular - tratamento ciúrgico">
+                30311047 - Estrabismo horizontal - monocular - tratamento ciúrgico
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30311055 - Injeção de toxina botulínica - monocular">
+                30311055 - Injeção de toxina botulínica - monocular
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30312086 - Retinopexia com introflexão escleral">
+                30312086 - Retinopexia com introflexão escleral
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30312094 - Retinopexia pneumática">
+                30312094 - Retinopexia pneumática
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30312108 - Retinopexia profilática (criopexia)">
+                30312108 - Retinopexia profilática (criopexia)
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30312132 - Implante Intravítreo de polímero farmacológico de liberação controlada (com diretriz definida pela ANS)DUT46">
+                30312132 - Implante Intravítreo de polímero farmacológico de liberação controlada (com diretriz definida pela ANS)DUT46
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30313031 - Dacriocistorrinostomia com ou sem intubação - unilateral">
+                30313031 - Dacriocistorrinostomia com ou sem intubação - unilateral
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30313058 - Reconstituição de vias lacrimais com silicone ou outro material">
+                30313058 - Reconstituição de vias lacrimais com silicone ou outro material
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="30313066 - Sondagem das vias lacrimais - com ou sem lavagem">
+                30313066 - Sondagem das vias lacrimais - com ou sem lavagem
+              </label>
+              <label class="split-check" style="margin-bottom:8px;">
+                <input type="checkbox" name="procedimentoCheck" value="Outro" id="procedimentoOutroCheck">
+                Outro
+              </label>
+              <button type="button" class="btn-small primary" id="procedimentoDone" style="width:100%; margin-top:4px;">Concluir</button>
+            </div>
+          </div>
+          <input type="text" id="procedimentoOutro" placeholder="Digite o procedimento" style="margin-top:8px; display:none;">
+        </div>
+
+        <div class="field" style="display:flex; gap:10px;">
+          <div style="flex:1; min-width:0;">
+            <label for="olho">Olho<span class="required-mark">*</span></label>
+            <select id="olho">
+              <option value="" disabled selected>Selecione…</option>
+              <option value="OD">OD</option>
+              <option value="OE">OE</option>
+              <option value="AO">AO</option>
+            </select>
+          </div>
+          <div style="flex:1; min-width:0;">
+            <label for="comAnestesista">Com anestesista?<span class="required-mark">*</span></label>
+            <select id="comAnestesista">
+              <option value="" disabled selected>Selecione…</option>
+              <option value="sim">Sim</option>
+              <option value="nao">Não</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="usaLente">Vai usar lente do Convênio?<span class="required-mark">*</span></label>
+          <select id="usaLente">
+            <option value="" disabled selected>Selecione…</option>
+            <option value="sim">Sim</option>
+            <option value="nao">Não</option>
+          </select>
+        </div>
+
+        <div class="field" id="solicitacaoLenteField" style="display:none;">
+          <label for="solicitacaoLente">Solicitação da lente</label>
+          <textarea id="solicitacaoLente" placeholder="Grau, modelo, observações da lente solicitada…"></textarea>
+        </div>
+
+        <div class="field" id="lenteParticularField" style="display:none;">
+          <label for="lenteParticularValor">Particular <span class="opt">(valor da lente que será cobrado)</span></label>
+          <input type="number" step="0.01" min="0" id="lenteParticularValor" placeholder="Valor em R$">
+        </div>
+
+        <div class="field">
+          <label for="observacoes">Observações <span class="opt">(opcional)</span></label>
+          <textarea id="observacoes" placeholder="Detalhes adicionais…"></textarea>
+        </div>
+
+        <div class="field">
+          <label for="guiaFotosInput">Anexos <span class="opt">(opcional — pode anexar mais de um arquivo)</span></label>
+          <div class="anexos-instrucoes">
+            TODOS OS EXAMES, GUIA MÉDICO (carimbada e assinada pelo médico, código do procedimento e olho a ser operado), LAUDO MÉDICO
+          </div>
+          <input type="file" id="guiaFotosInput" accept="image/jpeg,image/png,application/pdf,.pdf,.xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple>
+          <div class="opt" style="margin-top:4px;">Aceita PDF, Excel (.xls/.xlsx) ou imagem (JPG/PNG).</div>
+          <div id="guiaFotosPreview" class="guia-fotos-preview"></div>
+          <div id="guiaFotosHint" class="opt" style="margin-top:6px; display:none;"></div>
+        </div>
+
+        <button type="button" class="submit" id="formSubmitBtn">Enviar registro</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="view-historico" style="display:none;">
+    <div id="loginGate-historico" class="no-print"></div>
+    <div id="identityStatus-historico" class="no-print"></div>
+    <div id="content-historico">
+      <div class="respostas-head">
+        <h2 id="histCount">Solicitadas</h2>
+        <div class="actions no-print">
+          <button class="btn-small" id="refreshHistBtn">Atualizar</button>
+          <button class="btn-small" id="printHistBtn">Imprimir lista</button>
+          <button class="btn-small primary" id="exportBtn">Exportar .html</button>
+        </div>
+      </div>
+      <div class="filter-row no-print" id="stageFilterRow"></div>
+      <div id="historicoList"></div>
+    </div>
+  </div>
+
+  <div id="view-fin" style="display:none;">
+    <div id="loginGate-fin" class="no-print"></div>
+    <div id="finGate" class="fin-gate">
+      <div class="lock">🔒</div>
+      <p>Acesso restrito a Faturamento HUB, Autorização HUB e Financeiro HUB.<br>Faça login com um desses usuários para entrar aqui.</p>
+    </div>
+    <div id="finContent" style="display:none;">
+      <div id="identityStatus-fin" class="no-print"></div>
+      <div class="respostas-head">
+        <h2>Financeiro</h2>
+      </div>
+      <div class="fin-filters no-print">
+        <select id="finDoctorSelect"></select>
+        <input type="month" id="finMonthInput">
+      </div>
+      <div class="fin-summary">
+        <div class="fin-card total" style="grid-column:1/-1;">
+          <div class="fin-label">Total aguardando repasse do hospital</div>
+          <div class="fin-value" id="finTotal">R$ 0,00</div>
+        </div>
+        <div class="fin-card" style="grid-column:1/-1;">
+          <div class="fin-label">Imposto (18% s/ convênio) no mês</div>
+          <div class="fin-value" id="finImpostoTotal" style="color:var(--ink-muted); font-size:17px;">R$ 0,00</div>
+        </div>
+      </div>
+      <button class="pdf-btn no-print" id="pdfBtn">Gerar PDF do repasse</button>
+      <button class="btn-small no-print" id="printFinBtn" style="width:100%; margin-top:8px;">Imprimir lista</button>
+      <div class="respostas-head" style="margin-top:24px;">
+        <h2 id="finListTitle" style="font-size:15px;">Aguardando Repasse do Hospital</h2>
+      </div>
+      <div id="finList"></div>
+
+      <div style="margin-top:32px; padding-top:16px; border-top:1px solid var(--border); text-align:center;">
+        <button type="button" class="identity-edit" id="cleanup2025Btn">Limpar registros de 2025</button>
+      </div>
+
+      <div style="margin-top:24px; padding-top:16px; border-top:1px solid var(--border);">
+        <div class="respostas-head" style="margin-bottom:10px;">
+          <h2 style="font-size:15px;">Log de auditoria</h2>
+          <button type="button" class="btn-small no-print" id="auditLogToggleBtn">Ver log</button>
+        </div>
+        <div id="auditLogList" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="no-print">As respostas ficam salvas na nuvem deste link — compartilhe o mesmo link com as secretárias.</footer>
+</div>
+
+<div class="toast no-print" id="toast">Registro enviado com sucesso.</div>
+
+<div class="download-gate-overlay no-print" id="downloadGateOverlay" style="display:none;">
+  <div class="download-gate-box">
+    <div class="download-gate-title">🔒 Acesso restrito</div>
+    <p class="download-gate-text">Anexos e o formulário de agendamento só podem ser abertos com a senha da Autorização.</p>
+    <input type="password" id="downloadGateInput" placeholder="Senha" autocomplete="off">
+    <div class="download-gate-actions">
+      <button type="button" class="btn-small" id="downloadGateCancel">Cancelar</button>
+      <button type="button" class="btn-small primary" id="downloadGateConfirm">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+window.addEventListener('error', function(ev){
+  try{
+    const el = document.getElementById('toast');
+    if(el){
+      el.textContent = 'ERRO JS: ' + ev.message + ' (linha ' + ev.lineno + ')';
+      el.classList.add('show');
+      el.style.background = '#C0392B';
+    }
+  }catch(e){}
+});
+window.addEventListener('unhandledrejection', function(ev){
+  try{
+    const el = document.getElementById('toast');
+    const msg = (ev.reason && ev.reason.message) ? ev.reason.message : String(ev.reason);
+    if(el){
+      el.textContent = 'ERRO (promise): ' + msg;
+      el.classList.add('show');
+      el.style.background = '#C0392B';
+    }
+  }catch(e){}
+});
+
+/* ---------- Conexão com o Supabase ----------
+   Preencha com os dados do SEU projeto (Project Settings > API no painel do Supabase).
+   A anon key é pública por natureza (roda no navegador) — não é secreta como a service_role key. */
+const SUPABASE_URL = 'COLOQUE_AQUI_A_URL_DO_SEU_PROJETO_SUPABASE';
+const SUPABASE_ANON_KEY = 'COLOQUE_AQUI_A_ANON_KEY_DO_SEU_PROJETO_SUPABASE';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let allEntriesCache = null;
+
+const STATUS_STAGES = ['aguardando_autorizacao','autorizado_convenio','autorizada','concluida','paga','pagamento_efetuado'];
+const STATUS_LABELS = {
+  aguardando_autorizacao: 'Pendente de autorização',
+  autorizado_convenio: 'Autorizado Convênio',
+  autorizada: 'Agendar',
+  concluida: 'Aguardando Pagamento do Convênio',
+  paga: 'Aguardando Repasse do Hospital',
+  pagamento_efetuado: 'Repasse Efetuado'
+};
+const STAGE_MENU_LABELS = {
+  aguardando_autorizacao: 'Solicitadas',
+  autorizado_convenio: 'Autorizadas',
+  autorizada: 'Aguardando cirurgia',
+  concluida: 'Aguardando Pagamento do Convênio',
+  paga: 'Aguardando Repasse do Hospital',
+  pagamento_efetuado: 'Repasse Efetuado'
+};
+const STAGE_BADGE_CLASS = {
+  aguardando_autorizacao: 'st-aguardando_autorizacao',
+  autorizado_convenio: 'st-autorizada',
+  autorizada: 'st-autorizada',
+  concluida: 'st-concluida',
+  paga: 'st-paga',
+  pagamento_efetuado: 'st-pagamento_efetuado'
+};
+const RESTRICTED_STAGES = { pagamento_efetuado: 'Financeiro HUB' };
+const CARLO_NOME = 'Carlo de Castro Wille';
+
+function canSetStatus(newStatus, entry){
+  if(newStatus === 'aguardando_autorizacao') return true;
+  if(newStatus === 'autorizado_convenio'){
+    if(entry.medico === CARLO_NOME) return secretaryName === 'Autorização HUB';
+    return secretaryName === entry.medico || secretaryName === 'Autorização HUB';
+  }
+  if(newStatus === 'autorizada') return secretaryName === entry.medico || secretaryName === 'Autorização HUB';
+  if(newStatus === 'concluida') return secretaryName === CENTRO_CIRURGICO_NOME;
+  if(newStatus === 'paga') return secretaryName === 'Faturamento HUB' || secretaryName === 'Financeiro HUB';
+  if(newStatus === 'pagamento_efetuado') return secretaryName === RESTRICTED_STAGES.pagamento_efetuado;
+  return true;
+}
+
+function normalizeStatus(s){
+  if(STATUS_STAGES.includes(s)) return s;
+  if(s === 'acertado') return 'paga';
+  if(s === 'pendente') return 'concluida';
+  return 'aguardando_autorizacao';
+}
+
+/* ---------- Acesso aos dados (Supabase) ---------- */
+
+async function fetchAllEntries(){
+  if(allEntriesCache) return allEntriesCache;
+  const { data, error } = await sb.from('surgery_entries').select('data');
+  if(error){
+    console.error('Erro ao buscar cirurgias', error);
+    showCriticalToast('Erro ao carregar os dados. Atualize a página (F5) pra tentar de novo.');
+    throw error;
+  }
+  allEntriesCache = (data || []).map(row => row.data);
+  allEntriesCache.forEach(e => { e.status = normalizeStatus(e.status); });
+  return allEntriesCache;
+}
+
+const AUDIT_LOG_MAX = 500;
+
+async function logAudit(action, entryId, details){
+  try{
+    const { error } = await sb.from('audit_log').insert({
+      user: secretaryName || '—',
+      action,       // 'criar' | 'editar' | 'excluir'
+      entry_id: entryId,
+      details: details || ''
+    });
+    if(error) console.error('Erro ao registrar log de auditoria', error);
+  }catch(err){
+    console.error('Erro ao registrar log de auditoria', err);
+  }
+}
+
+function resumoAlteracoes(changes){
+  return Object.keys(changes).map(k => `${k}: "${changes[k]}"`).join(', ').slice(0, 300);
+}
+
+async function addEntry(entry){
+  const arr = allEntriesCache || await fetchAllEntries();
+  entry.id = 'e_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+  const { error } = await sb.from('surgery_entries').insert({ id: entry.id, data: entry });
+  if(error){ console.error(error); throw error; }
+  arr.push(entry);
+  logAudit('criar', entry.id, `Paciente: ${entry.paciente || '—'} · Médico: ${entry.medico || '—'}`);
+  return entry;
+}
+
+async function updateEntry(id, changes){
+  const arr = allEntriesCache || await fetchAllEntries();
+  const item = arr.find(e => e.id === id);
+  if(!item) return null;
+  Object.assign(item, changes);
+  const { error } = await sb.from('surgery_entries').update({ data: item, updated_at: new Date().toISOString() }).eq('id', id);
+  if(error){ console.error(error); throw error; }
+  logAudit('editar', id, resumoAlteracoes(changes));
+  return item;
+}
+
+async function deleteEntry(id){
+  const arr = allEntriesCache || await fetchAllEntries();
+  const idx = arr.findIndex(e => e.id === id);
+  if(idx === -1) return false;
+  const removido = arr[idx];
+  const { error } = await sb.from('surgery_entries').delete().eq('id', id);
+  if(error){ console.error(error); throw error; }
+  arr.splice(idx, 1);
+  logAudit('excluir', id, `Paciente: ${removido.paciente || '—'} · Médico: ${removido.medico || '—'}`);
+  return true;
+}
+
+/* ---------- Trava extra de download (anexos + formulário de agendamento) ---------- */
+const DOWNLOAD_PASSWORD = '362514';
+let downloadUnlocked = false;
+
+function hasDownloadAccess(){
+  return secretaryName === 'Autorização HUB' || downloadUnlocked;
+}
+
+function requestDownloadAccess(onGranted){
+  if(hasDownloadAccess()){ onGranted(); return; }
+  const overlay = document.getElementById('downloadGateOverlay');
+  const input = document.getElementById('downloadGateInput');
+  input.value = '';
+  overlay.style.display = 'flex';
+  setTimeout(()=> input.focus(), 50);
+
+  const cleanup = ()=>{
+    overlay.style.display = 'none';
+    confirmBtn.removeEventListener('click', onConfirm);
+    cancelBtn.removeEventListener('click', onCancel);
+    input.removeEventListener('keydown', onKeydown);
+  };
+  const onConfirm = ()=>{
+    if(input.value === DOWNLOAD_PASSWORD){
+      downloadUnlocked = true;
+      cleanup();
+      onGranted();
+    }else{
+      showToast('Senha incorreta.');
+      input.value = '';
+      input.focus();
+    }
+  };
+  const onCancel = ()=> cleanup();
+  const onKeydown = (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); onConfirm(); } };
+
+  const confirmBtn = document.getElementById('downloadGateConfirm');
+  const cancelBtn = document.getElementById('downloadGateCancel');
+  confirmBtn.addEventListener('click', onConfirm);
+  cancelBtn.addEventListener('click', onCancel);
+  input.addEventListener('keydown', onKeydown);
+}
+
+let auditLogLoaded = false;
+
+async function toggleAuditLog(){
+  const box = document.getElementById('auditLogList');
+  const btn = document.getElementById('auditLogToggleBtn');
+  if(box.style.display !== 'none'){
+    box.style.display = 'none';
+    btn.textContent = 'Ver log';
+    return;
+  }
+  box.style.display = 'block';
+  btn.textContent = 'Ocultar log';
+  if(auditLogLoaded) return;
+  box.innerHTML = '<div class="empty">Carregando…</div>';
+  try{
+    const { data, error } = await sb.from('audit_log').select('*').order('ts', { ascending: false }).limit(AUDIT_LOG_MAX);
+    if(error) throw error;
+    if(!data || data.length === 0){
+      box.innerHTML = '<div class="empty">Nenhum evento registrado ainda.</div>';
+      return;
+    }
+    const acaoLabel = { criar: 'Criou', editar: 'Editou', excluir: 'Excluiu' };
+    const rows = data.map(ev => `
+      <div class="entry readonly" style="padding:10px 14px;">
+        <div class="entry-date" style="font-size:11.5px;">
+          ${new Date(ev.ts).toLocaleString('pt-BR')} · <b>${ev.user}</b> · ${acaoLabel[ev.action] || ev.action}
+        </div>
+        ${ev.details ? `<div style="font-size:12.5px; margin-top:4px; color:var(--ink);">${ev.details}</div>` : ''}
+      </div>
+    `).join('');
+    box.innerHTML = rows;
+    auditLogLoaded = true;
+  }catch(err){
+    console.error(err);
+    box.innerHTML = '<div class="empty">Erro ao carregar o log.</div>';
+  }
+}
+
+const doctors = [
+  {name:'Carlo de Castro Wille', color:'#1F5C58'},
+  {name:'Mariana Corte Real',    color:'#7B5E7B'},
+  {name:'Eduardo Becker',        color:'#4A5C7B'},
+  {name:'Amilton Irigaray',      color:'#8B6F47'},
+  {name:'Jose Eduardo Cassou',   color:'#5C7B5E'},
+  {name:'Joao Deitrich',         color:'#C0873C'},
+  {name:'Alexandre Bomfim Rodrigues', color:'#B0554D'}
+];
+
+function initials(name){
+  const parts = name.split(' ').filter(p => p.length > 2 || p === p.toUpperCase());
+  const first = name.trim()[0] || '';
+  const rest = name.trim().split(' ').slice(-1)[0][0] || '';
+  return (first + rest).toUpperCase();
+}
+
+let currentDoctor = null;
+let secretaryName = null;
+let editingEntryId = null;
+const IRIGARAY_NOME = 'Amilton Irigaray';
+
+function isRateadoComCarlo(entry){
+  if(entry.medico === IRIGARAY_NOME) return false;
+  return entry.medicoRealizou === CARLO_NOME && entry.medico !== CARLO_NOME;
+}
+
+function statusLabelFor(entry){
+  if(entry.status === 'autorizada' && entry.dataCirurgia) return 'Agendado';
+  return STATUS_LABELS[entry.status] || entry.status;
+}
+
+function calcNet(entry){
+  const conv = Number(entry.valorConvenio) || 0;
+  const lente = (entry.medico === IRIGARAY_NOME) ? (Number(entry.valorLente) || 0) : 0;
+  const honorarioLiquido = entry.honorarioDireto ? 0 : (conv * 0.82);
+  let net = honorarioLiquido + lente;
+  if(isRateadoComCarlo(entry)) net = net / 2;
+  return net;
+}
+
+function calcImposto(entry){
+  const conv = Number(entry.valorConvenio) || 0;
+  return conv * 0.18;
+}
+
+function liquidoTextoCompleto(entry){
+  let txt = 'Imposto (18%): ' + brl(calcImposto(entry)) + ' · Líquido a repassar: ' + brl(calcNet(entry));
+  if(isRateadoComCarlo(entry)){
+    txt += ' (metade — cirurgia realizada pelo Dr. Carlo, valor rateado 50/50)';
+  }
+  return txt;
+}
+
+function splitHintText(entry){
+  const temLio = (Number(entry.valorLente)||0) > 0;
+  const honorarioTxt = entry.honorarioDireto
+    ? 'Honorário: pago direto em conta —'
+    : 'Honorário: aguardando repasse do hospital';
+  if(!temLio){
+    return honorarioTxt + (entry.honorarioDireto ? ' · Sem LIO — pronto para Repasse Efetuado.' : '');
+  }
+  const lioTxt = entry.lioPago ? 'LIO: paga —' : 'LIO: aguardando pagamento pelo hospital';
+  const pronto = entry.honorarioDireto && entry.lioPago;
+  return honorarioTxt + ' · ' + lioTxt + (pronto ? ' · Tudo pago — pronto para Repasse Efetuado.' : '');
+}
+
+function brl(n){
+  return (n||0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+}
+
+const toast = document.getElementById('toast');
+const tabHistoricoBtn = document.getElementById('tab-historico-btn');
+const tabAutorizacaoBtn = document.getElementById('tab-autorizacao-btn');
+const tabFaturamentoBtn = document.getElementById('tab-faturamento-btn');
+const tabFinBtn = document.getElementById('tab-fin-btn');
+const viewHome = document.getElementById('view-home');
+const viewForm = document.getElementById('view-form');
+const viewHistorico = document.getElementById('view-historico');
+const viewFin = document.getElementById('view-fin');
+const historicoList = document.getElementById('historicoList');
+const histCount = document.getElementById('histCount');
+const doctorGrid = document.getElementById('doctorGrid');
+const form = document.getElementById('surgeryForm');
+
+let appLoadingSilently = true;
+
+function showToast(msg){
+  if(appLoadingSilently) return;
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(()=>toast.classList.remove('show'), 2600);
+}
+
+function showCriticalToast(msg){
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(()=>toast.classList.remove('show'), 5000);
+}
+
+function initialsOf(name){
+  const p = name.trim().split(' ');
+  return ((p[0]?.[0]||'') + (p.length>1 ? p[p.length-1][0] : '')).toUpperCase();
+}
+
+let secretaryDoctors = [];
+
+const HUB_IDENTITIES = ['Autorização HUB', 'Faturamento HUB', 'Financeiro HUB'];
+const CENTRO_CIRURGICO_NOME = 'Secretaria Centro Cirúrgico';
+const RESTRITOS_DO_FORMULARIO = [CENTRO_CIRURGICO_NOME, 'Faturamento HUB', 'Financeiro HUB'];
+
+const CREDENTIALS = {
+  'Carlo de Castro Wille': { password: '142536', medicos: ['Carlo de Castro Wille'] },
+  'Mariana Corte Real':    { password: 'Mcreal',       medicos: ['Mariana Corte Real'] },
+  'Eduardo Becker':        { password: 'EBecker',      medicos: ['Eduardo Becker'] },
+  'Amilton Irigaray':      { password: 'Irigaray1425', medicos: ['Amilton Irigaray'] },
+  'Jose Eduardo Cassou':   { password: 'Jecassou',     medicos: ['Jose Eduardo Cassou'] },
+  'Joao Deitrich':         { password: 'Joao4059',     medicos: ['Joao Deitrich'] },
+  'Alexandre Bomfim Rodrigues': { password: 'Abrodrigues', medicos: ['Alexandre Bomfim Rodrigues'] },
+  'Autorização HUB':       { password: '142536', medicos: [] },
+  'Faturamento HUB':       { password: '142536', medicos: [] },
+  'Financeiro HUB':        { password: '142536', medicos: [] },
+  [CENTRO_CIRURGICO_NOME]: { password: '142536', medicos: [] },
+};
+
+function loadSecretaryName(){
+  secretaryName = localStorage.getItem('secretariaNome') || null;
+  if(secretaryName && CREDENTIALS[secretaryName]){
+    secretaryDoctors = CREDENTIALS[secretaryName].medicos;
+  }else{
+    secretaryName = null;
+    secretaryDoctors = [];
+  }
+}
+
+function saveSecretaryName(name){
+  secretaryName = name;
+  secretaryDoctors = CREDENTIALS[name] ? CREDENTIALS[name].medicos : [];
+  localStorage.setItem('secretariaNome', name);
+  updateNavForIdentity();
+}
+
+function logout(){
+  secretaryName = null;
+  secretaryDoctors = [];
+  localStorage.removeItem('secretariaNome');
+  updateNavForIdentity();
+}
+
+function updateNavForIdentity(){
+  const nav = document.querySelector('nav.tabs');
+  nav.style.display = (secretaryName && secretaryName !== CENTRO_CIRURGICO_NOME) ? 'flex' : 'none';
+}
+
+function loginOptionsHtml(){
+  const doctorOptions = doctors.map(d=>`<option value="${d.name}">${d.name}</option>`).join('');
+  const hubOptions = HUB_IDENTITIES
+    .map(h=>`<option value="${h}">${h}</option>`).join('');
+  return `<option value="" disabled selected>Selecione…</option>
+    <optgroup label="Médicos">${doctorOptions}</optgroup>
+    <optgroup label="Centro Cirúrgico">
+      <option value="${CENTRO_CIRURGICO_NOME}">${CENTRO_CIRURGICO_NOME}</option>
+    </optgroup>
+    <optgroup label="HUB (vê todos)">${hubOptions}</optgroup>`;
+}
+
+function renderLoginGate(containerId, onSuccess){
+  const el = document.getElementById(containerId);
+  if(!el) return;
+  el.style.display = 'block';
+  el.innerHTML = `
+    <form class="identity-form" id="loginForm-${containerId}" onsubmit="return false;">
+      <select id="loginSelect-${containerId}" required>${loginOptionsHtml()}</select>
+      <input type="password" id="loginPassword-${containerId}" placeholder="Senha">
+      <button type="submit">Entrar</button>
+    </form>
+  `;
+  const submitHandler = async (e)=>{
+    if(e && e.preventDefault) e.preventDefault();
+    try{
+      const who = document.getElementById('loginSelect-' + containerId).value;
+      const passEl = document.getElementById('loginPassword-' + containerId);
+      const pass = passEl ? passEl.value : '';
+      if(!who){ showToast('Selecione quem você é.'); return false; }
+      const cred = CREDENTIALS[who];
+      if(cred && cred.password === pass){
+        saveSecretaryName(who);
+        el.style.display = 'none';
+        el.innerHTML = '';
+        if(onSuccess) onSuccess();
+      }else{
+        showToast('Senha incorreta para "' + who + '".');
+        if(passEl) passEl.value = '';
+      }
+    }catch(err){
+      console.error('Erro no login:', err);
+      showToast('Erro ao entrar: ' + (err && err.message ? err.message : 'tente novamente'));
+    }
+    return false;
+  };
+  const loginForm = document.getElementById('loginForm-' + containerId);
+  loginForm.addEventListener('submit', submitHandler);
+  loginForm.querySelector('button[type=submit]').addEventListener('click', (e)=>{
+    e.preventDefault();
+    submitHandler(e);
+  });
+}
+
+function renderIdentityStatus(containerId, onLogout){
+  const el = document.getElementById(containerId);
+  if(!el) return;
+  if(!secretaryName){ el.innerHTML = ''; return; }
+  const atendeTxt = secretaryDoctors.length ? secretaryDoctors.join(', ') : 'todos os médicos';
+  const isHub = HUB_IDENTITIES.includes(secretaryName);
+  const actionLabel = isHub ? 'trocar' : 'sair';
+  const podeCriar = !RESTRITOS_DO_FORMULARIO.includes(secretaryName);
+  const novaCirurgiaBtn = podeCriar ? `<button class="btn-small primary" id="novaCirurgia-${containerId}" style="margin-left:auto;">+ Nova cirurgia</button>` : '';
+  el.innerHTML = `
+    <div class="identity-pill" style="margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+      <div class="dot">${initialsOf(secretaryName)}</div>
+      <span class="who">Acesso: <b>${secretaryName}</b> · vê: ${atendeTxt}</span>
+      <button class="identity-edit" id="trocar-${containerId}">${actionLabel}</button>
+      ${novaCirurgiaBtn}
+    </div>
+  `;
+  document.getElementById('trocar-' + containerId).addEventListener('click', ()=>{
+    logout();
+    if(onLogout) onLogout();
+  });
+  if(podeCriar){
+    document.getElementById('novaCirurgia-' + containerId).addEventListener('click', ()=>{
+      if(!isHub && secretaryDoctors.length === 1){
+        const doc = doctors.find(d => d.name === secretaryDoctors[0]);
+        if(doc){ openForm(doc); return; }
+      }
+      openMedicosTab();
+    });
+  }
+}
+
+function slug(name){ return name.replace(/\s+/g,''); }
+
+function renderDoctorGrid(){
+  doctorGrid.innerHTML = '';
+  const visibleDoctors = secretaryDoctors.length
+    ? doctors.filter(d => secretaryDoctors.includes(d.name))
+    : doctors;
+  if(visibleDoctors.length === 0){
+    doctorGrid.innerHTML = '<div class="empty" style="grid-column:1/-1;">Nenhum médico disponível para este acesso.</div>';
+    return;
+  }
+  visibleDoctors.forEach(doc=>{
+    const card = document.createElement('div');
+    card.className = 'doctor-card';
+    renderDoctorCardDefault(card, doc);
+    doctorGrid.appendChild(card);
+  });
+}
+
+function renderDoctorCardDefault(card, doc){
+  card.style.cursor = 'pointer';
+  card.innerHTML = `
+    <div class="doctor-avatar" style="background:${doc.color}">${initials(doc.name)}</div>
+    <div>
+      <div class="doctor-name">${doc.name}</div>
+      <div class="doctor-cta" style="cursor:pointer;">Toque para entrar →</div>
+    </div>
+  `;
+  card.onclick = ()=> handleDoctorCardClick(card, doc);
+}
+
+function handleDoctorCardClick(card, doc){
+  const jaAutenticado = secretaryName && (secretaryDoctors.length === 0 || secretaryDoctors.includes(doc.name));
+  if(jaAutenticado){
+    openForm(doc);
+    return;
+  }
+  renderDoctorCardPasswordForm(card, doc);
+}
+
+function renderDoctorCardPasswordForm(card, doc){
+  card.onclick = null;
+  const id = slug(doc.name);
+  card.innerHTML = `
+    <div class="doctor-avatar" style="background:${doc.color}">${initials(doc.name)}</div>
+    <div style="width:100%;">
+      <div class="doctor-name">${doc.name}</div>
+      <form class="identity-form" id="cardLogin-${id}" onsubmit="return false;" style="margin-top:8px;">
+        <input type="password" placeholder="Senha" id="cardPass-${id}" style="width:100%;">
+        <button type="submit">Entrar</button>
+      </form>
+      <button type="button" class="identity-edit" id="cardCancel-${id}" style="margin-top:6px;">cancelar</button>
+    </div>
+  `;
+  const submitHandler = (e)=>{
+    if(e && e.preventDefault) e.preventDefault();
+    const passEl = document.getElementById('cardPass-' + id);
+    const pass = passEl ? passEl.value : '';
+    const cred = CREDENTIALS[doc.name];
+    if(cred && cred.password === pass){
+      saveSecretaryName(doc.name);
+      openForm(doc);
+    }else{
+      showToast('Senha incorreta.');
+      if(passEl) passEl.value = '';
+    }
+    return false;
+  };
+  const formEl = document.getElementById('cardLogin-' + id);
+  formEl.addEventListener('submit', submitHandler);
+  formEl.querySelector('button[type=submit]').addEventListener('click', (e)=>{
+    e.preventDefault();
+    submitHandler(e);
+  });
+  document.getElementById('cardCancel-' + id).addEventListener('click', ()=>{
+    renderDoctorCardDefault(card, doc);
+  });
+}
+
+function openForm(doc){
+  currentDoctor = doc;
+  editingEntryId = null;
+  document.getElementById('formAvatar').style.background = doc.color;
+  document.getElementById('formAvatar').textContent = initials(doc.name);
+  document.getElementById('formDoctorName').textContent = doc.name;
+  document.getElementById('formDoctorSub').textContent = 'Novo registro de cirurgia';
+  document.getElementById('formSubmitBtn').textContent = 'Enviar registro';
+  form.reset();
+  form.querySelectorAll('.field-invalid').forEach(el=> el.classList.remove('field-invalid'));
+  guiaFotosPending = [];
+  renderGuiaFotosPreview();
+  document.getElementById('solicitacaoLenteField').style.display = 'none';
+  document.getElementById('lenteParticularField').style.display = 'none';
+  document.getElementById('procedimentoOutro').style.display = 'none';
+  procTrigger.textContent = 'Selecione…';
+  procPanel.style.display = 'none';
+  hideAllViews();
+  viewForm.style.display = 'block';
+}
+
+function parseObsForEdit(observacoes){
+  const parts = (observacoes || '').split(' | ');
+  let usaLente = null, solicitacaoLenteVal = '';
+  const obsBase = [];
+  parts.forEach(p=>{
+    const simMatch = p.match(/^Vai usar lente \(LIO\)(?::\s*(.*))?$/);
+    const naoMatch = p.match(/^Não vai usar lente \(LIO\)$/);
+    if(simMatch){ usaLente = 'sim'; solicitacaoLenteVal = simMatch[1] || ''; }
+    else if(naoMatch){ usaLente = 'nao'; }
+    else if(p.trim()) obsBase.push(p);
+  });
+  return { usaLente, solicitacaoLenteVal, obsBase: obsBase.join(' | ') };
+}
+
+async function openFormForEdit(entry){
+  const doc = doctors.find(d => d.name === entry.medico) || { name: entry.medico, color: 'var(--primary)' };
+  currentDoctor = doc;
+  editingEntryId = entry.id;
+  document.getElementById('formAvatar').style.background = doc.color;
+  document.getElementById('formAvatar').textContent = initials(doc.name);
+  document.getElementById('formDoctorName').textContent = doc.name;
+  document.getElementById('formDoctorSub').textContent = 'Editando solicitação';
+  document.getElementById('formSubmitBtn').textContent = 'Salvar alterações';
+  form.reset();
+
+  document.getElementById('dataSolicitacao').value = entry.dataSolicitacao || '';
+  document.getElementById('numeroGuia').value = entry.numeroGuia || '';
+  document.getElementById('senhaGuia').value = entry.senhaGuia || '';
+  document.getElementById('validadeGuia').value = entry.validadeGuia || '';
+  document.getElementById('paciente').value = entry.paciente || '';
+  document.getElementById('carteirinha').value = entry.carteirinha || '';
+  document.getElementById('olho').value = entry.olho || '';
+  document.getElementById('comAnestesista').value = entry.comAnestesista || '';
+  document.getElementById('convenio').value = entry.convenio || '';
+
+  const items = (entry.procedimento || '').split(' + ').map(s=>s.trim()).filter(Boolean);
+  const knownValues = Array.from(document.querySelectorAll('input[name=procedimentoCheck]')).map(c=>c.value);
+  const unmatched = items.filter(i => !knownValues.includes(i));
+  document.querySelectorAll('input[name=procedimentoCheck]').forEach(chk=>{
+    chk.checked = items.includes(chk.value);
+  });
+  if(unmatched.length){
+    document.getElementById('procedimentoOutroCheck').checked = true;
+    document.getElementById('procedimentoOutro').value = unmatched.join(' + ');
+    document.getElementById('procedimentoOutro').style.display = 'block';
+  }else{
+    document.getElementById('procedimentoOutro').style.display = 'none';
+  }
+  updateProcedimentoTrigger();
+
+  const parsed = parseObsForEdit(entry.observacoes);
+  document.getElementById('observacoes').value = (entry.observacoes !== undefined && entry.usaLenteConvenio !== undefined)
+    ? (entry.observacoes || '')
+    : parsed.obsBase;
+
+  const usaLenteFinal = entry.usaLenteConvenio || parsed.usaLente;
+  if(usaLenteFinal){
+    document.getElementById('usaLente').value = usaLenteFinal;
+    document.getElementById('solicitacaoLenteField').style.display = (usaLenteFinal === 'sim') ? 'block' : 'none';
+    document.getElementById('lenteParticularField').style.display = (usaLenteFinal === 'nao') ? 'block' : 'none';
+    document.getElementById('solicitacaoLente').value = entry.solicitacaoLente || parsed.solicitacaoLenteVal || '';
+    document.getElementById('lenteParticularValor').value = entry.lenteParticularValor || '';
+  }
+
+  guiaFotosPending = [];
+  renderGuiaFotosPreview();
+  try{
+    const { data, error } = await sb.from('attachments').select('files').eq('entry_id', entry.id).maybeSingle();
+    if(error) throw error;
+    const fotos = (data && data.files) ? data.files : [];
+    guiaFotosPending = fotos.map(f => (typeof f === 'string')
+      ? { name: 'foto.jpg', mime: 'image/jpeg', isImage: true, dataUrl: f }
+      : f);
+    renderGuiaFotosPreview();
+  }catch(err){ /* sem fotos ainda, tudo bem */ }
+
+  hideAllViews();
+  viewForm.style.display = 'block';
+}
+
+document.getElementById('backBtn').addEventListener('click', ()=>{
+  viewForm.style.display = 'none';
+  editingEntryId = null;
+  activeStage = 'aguardando_autorizacao';
+  openHistoricoTab();
+});
+
+function goToDoctorHistory(doctorName){
+  activeStage = 'aguardando_autorizacao';
+  openHistoricoTab();
+}
+
+function setActiveTab(btn){
+  [tabHistoricoBtn, tabAutorizacaoBtn, tabFaturamentoBtn, tabFinBtn].forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+}
+
+function hideAllViews(){
+  viewHome.style.display = 'none';
+  viewForm.style.display = 'none';
+  viewHistorico.style.display = 'none';
+  viewFin.style.display = 'none';
+}
+
+function openMedicosTab(){
+  setActiveTab(null);
+  hideAllViews();
+  viewHome.style.display = 'block';
+  document.getElementById('loginGate-home').style.display = 'none';
+  document.getElementById('loginGate-home').innerHTML = '';
+  renderIdentityStatus('identityStatus-home', openMedicosTab);
+  renderDoctorGrid();
+
+  const hubRow = document.getElementById('hubAccessRow');
+  if(secretaryName){
+    hubRow.style.display = 'none';
+  }else{
+    hubRow.style.display = 'block';
+    document.getElementById('hubAccessLink').onclick = ()=>{
+      hubRow.style.display = 'none';
+      renderLoginGate('loginGate-home', ()=>{
+        if(RESTRITOS_DO_FORMULARIO.includes(secretaryName)){
+          openHistoricoTab();
+          return;
+        }
+        renderIdentityStatus('identityStatus-home', openMedicosTab);
+        updateNavForIdentity();
+        renderDoctorGrid();
+      });
+    };
+  }
+}
+
+function openHistoricoTab(stage, btn){
+  setActiveTab(btn || tabHistoricoBtn);
+  hideAllViews();
+  viewHistorico.style.display = 'block';
+  const content = document.getElementById('content-historico');
+  if(secretaryName === CENTRO_CIRURGICO_NOME){
+    activeStage = 'autorizada';
+  }else if(stage){
+    activeStage = stage;
+  }
+  renderStageChips();
+  if(!secretaryName){
+    document.getElementById('identityStatus-historico').innerHTML = '';
+    content.style.display = 'none';
+    renderLoginGate('loginGate-historico', ()=>{
+      renderIdentityStatus('identityStatus-historico', openMedicosTab);
+      content.style.display = 'block';
+      loadHistorico();
+    });
+  }else{
+    document.getElementById('loginGate-historico').style.display = 'none';
+    document.getElementById('loginGate-historico').innerHTML = '';
+    renderIdentityStatus('identityStatus-historico', openMedicosTab);
+    content.style.display = 'block';
+    loadHistorico();
+  }
+}
+
+function openFinTab(){
+  setActiveTab(tabFinBtn);
+  hideAllViews();
+  viewFin.style.display = 'block';
+  const finGate = document.getElementById('finGate');
+  const finContent = document.getElementById('finContent');
+  if(!secretaryName){
+    finGate.style.display = 'none';
+    finContent.style.display = 'none';
+    renderLoginGate('loginGate-fin', ()=>{
+      openFinTab();
+    });
+    return;
+  }
+  document.getElementById('loginGate-fin').style.display = 'none';
+  document.getElementById('loginGate-fin').innerHTML = '';
+  const isHub = HUB_IDENTITIES.includes(secretaryName);
+  if(isHub){
+    finGate.style.display = 'none';
+    finContent.style.display = 'block';
+    renderIdentityStatus('identityStatus-fin', openMedicosTab);
+    initFinanceiro();
+  }else{
+    finGate.style.display = 'block';
+    finContent.style.display = 'none';
+  }
+}
+
+tabHistoricoBtn.addEventListener('click', ()=> { allEntriesCache = null; openHistoricoTab(); });
+tabAutorizacaoBtn.addEventListener('click', ()=> { allEntriesCache = null; openHistoricoTab('autorizado_convenio', tabAutorizacaoBtn); });
+tabFaturamentoBtn.addEventListener('click', ()=> { allEntriesCache = null; openHistoricoTab('concluida', tabFaturamentoBtn); });
+tabFinBtn.addEventListener('click', ()=> { allEntriesCache = null; openFinTab(); });
+
+(async function initApp(){
+  loadSecretaryName();
+  updateNavForIdentity();
+  try{
+    await fetchAllEntries();
+  }catch(err){
+    console.error('Erro ao carregar dados iniciais', err);
+  }
+  appLoadingSilently = false;
+  const isHub = secretaryName && HUB_IDENTITIES.includes(secretaryName);
+  const restrito = secretaryName && RESTRITOS_DO_FORMULARIO.includes(secretaryName);
+  if(secretaryName && (!isHub || restrito)){
+    openHistoricoTab();
+  }else{
+    openMedicosTab();
+  }
+})();
+
+function fmtDate(iso){
+  if(!iso) return '—';
+  const [y,m,d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+function dataEfetiva(entry){
+  return entry.dataCirurgia || entry.dataSolicitacao || '';
+}
+
+document.getElementById('procedimentoOutroCheck').addEventListener('change', (e)=>{
+  document.getElementById('procedimentoOutro').style.display = e.target.checked ? 'block' : 'none';
+});
+
+const procTrigger = document.getElementById('procedimentoTrigger');
+const procPanel = document.getElementById('procedimentoPanel');
+const procMultiselect = document.getElementById('procedimentoMultiselect');
+
+function updateProcedimentoTrigger(){
+  const checked = Array.from(document.querySelectorAll('input[name=procedimentoCheck]:checked'));
+  if(checked.length === 0){
+    procTrigger.textContent = 'Selecione…';
+  }else if(checked.length <= 2){
+    procTrigger.textContent = checked.map(c => c.value.replace(/^\d+\s*-\s*/, '')).join(' + ');
+  }else{
+    procTrigger.textContent = `${checked.length} procedimentos selecionados`;
+  }
+}
+
+procTrigger.addEventListener('click', ()=>{
+  const abrindo = procPanel.style.display === 'none';
+  procPanel.style.display = abrindo ? 'block' : 'none';
+  if(abrindo){
+    const search = document.getElementById('procedimentoSearch');
+    search.value = '';
+    document.querySelectorAll('#procedimentoPanel label.split-check').forEach(l=> l.style.display = 'flex');
+    setTimeout(()=> search.focus(), 50);
+  }
+});
+
+document.getElementById('procedimentoSearch').addEventListener('input', (e)=>{
+  const q = e.target.value.trim().toLowerCase();
+  document.querySelectorAll('#procedimentoPanel label.split-check').forEach(label=>{
+    const texto = label.textContent.toLowerCase();
+    label.style.display = (!q || texto.includes(q)) ? 'flex' : 'none';
+  });
+});
+
+document.getElementById('procedimentoSearch').addEventListener('click', (e)=> e.stopPropagation());
+
+document.getElementById('procedimentoDone').addEventListener('click', ()=>{
+  procPanel.style.display = 'none';
+  updateProcedimentoTrigger();
+});
+
+document.querySelectorAll('input[name=procedimentoCheck]').forEach(chk=>{
+  chk.addEventListener('change', updateProcedimentoTrigger);
+});
+
+document.addEventListener('click', (e)=>{
+  if(procPanel.style.display !== 'none' && !procMultiselect.contains(e.target)){
+    procPanel.style.display = 'none';
+    updateProcedimentoTrigger();
+  }
+});
+
+document.getElementById('usaLente').addEventListener('change', (e)=>{
+  document.getElementById('solicitacaoLenteField').style.display = (e.target.value === 'sim') ? 'block' : 'none';
+  document.getElementById('lenteParticularField').style.display = (e.target.value === 'nao') ? 'block' : 'none';
+  if(e.target.value) e.target.classList.remove('field-invalid');
+});
+
+['dataSolicitacao','paciente','convenio'].forEach(id=>{
+  const el = document.getElementById(id);
+  if(el) el.addEventListener('input', ()=>{ if(el.value.trim()) el.classList.remove('field-invalid'); });
+});
+['olho','comAnestesista'].forEach(id=>{
+  const el = document.getElementById(id);
+  if(el) el.addEventListener('change', ()=>{ if(el.value) el.classList.remove('field-invalid'); });
+});
+document.querySelectorAll('input[name=procedimentoCheck]').forEach(chk=>{
+  chk.addEventListener('change', ()=>{
+    const algumMarcado = form.querySelectorAll('input[name=procedimentoCheck]:checked').length > 0;
+    if(algumMarcado) document.getElementById('procedimentoTrigger').classList.remove('field-invalid');
+  });
+});
+
+let guiaFotosPending = [];
+
+function compressImageFile(file, maxDim, quality){
+  return new Promise((resolve, reject)=>{
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = ()=>{ img.src = reader.result; };
+    reader.onerror = reject;
+    img.onload = ()=>{
+      let { width, height } = img;
+      if(width > height && width > maxDim){
+        height = Math.round(height * (maxDim / width));
+        width = maxDim;
+      }else if(height > maxDim){
+        width = Math.round(width * (maxDim / height));
+        height = maxDim;
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function readFileAsDataUrl(file){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = ()=> resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function fileExt(name){
+  const m = (name || '').match(/\.([a-zA-Z0-9]+)$/);
+  return m ? m[1].toUpperCase() : 'ARQ';
+}
+
+async function processAttachmentFile(file){
+  const isImage = file.type.startsWith('image/');
+  if(isImage){
+    const dataUrl = await compressImageFile(file, 1400, 0.65);
+    return { name: file.name, mime: 'image/jpeg', isImage: true, dataUrl };
+  }
+  const dataUrl = await readFileAsDataUrl(file);
+  return { name: file.name, mime: file.type || 'application/octet-stream', isImage: false, dataUrl };
+}
+
+function guiaFotosTotalBytes(){
+  return guiaFotosPending.reduce((s,f)=> s + Math.round((f.dataUrl || '').length * 0.75), 0);
+}
+
+function renderAttachmentThumb(f, idx, removable){
+  const inner = f.isImage
+    ? `<img src="${f.dataUrl}" data-idx="${idx}" title="Toque para ampliar">`
+    : `<div class="guia-foto-thumb is-file" data-idx="${idx}" title="${f.name}">
+         <div class="ext">📄</div>
+         <div class="ext" style="font-size:10px;">${fileExt(f.name)}</div>
+         <div class="fname">${f.name}</div>
+       </div>`;
+  const removeBtn = removable ? `<button type="button" class="remove-foto" data-remove="${idx}" title="Remover">×</button>` : '';
+  return f.isImage
+    ? `<div class="guia-foto-thumb">${inner}${removeBtn}</div>`
+    : `<div style="position:relative;">${inner}${removeBtn}</div>`;
+}
+
+function renderGuiaFotosPreview(){
+  const wrap = document.getElementById('guiaFotosPreview');
+  const hint = document.getElementById('guiaFotosHint');
+  wrap.innerHTML = guiaFotosPending.map((f, i)=> renderAttachmentThumb(f, i, true)).join('');
+  if(guiaFotosPending.length > 0){
+    const kb = Math.round(guiaFotosTotalBytes() / 1024);
+    hint.style.display = 'block';
+    hint.textContent = `${guiaFotosPending.length} arquivo(s) anexado(s) · ~${kb} KB`;
+  }else{
+    hint.style.display = 'none';
+  }
+  wrap.querySelectorAll('img[data-idx]').forEach(im=>{
+    im.addEventListener('click', ()=> window.open(im.src, '_blank'));
+  });
+  wrap.querySelectorAll('.guia-foto-thumb.is-file[data-idx]').forEach(box=>{
+    box.addEventListener('click', ()=>{
+      const f = guiaFotosPending[Number(box.getAttribute('data-idx'))];
+      if(f) window.open(f.dataUrl, '_blank');
+    });
+  });
+  wrap.querySelectorAll('button[data-remove]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      guiaFotosPending.splice(Number(btn.getAttribute('data-remove')), 1);
+      renderGuiaFotosPreview();
+    });
+  });
+}
+
+document.getElementById('guiaFotosInput').addEventListener('change', async (e)=>{
+  const files = Array.from(e.target.files || []);
+  if(files.length === 0) return;
+  showToast('Processando arquivo(s)…');
+  try{
+    for(const file of files){
+      const processed = await processAttachmentFile(file);
+      guiaFotosPending.push(processed);
+    }
+    renderGuiaFotosPreview();
+  }catch(err){
+    console.error(err);
+    showToast('Erro ao processar um dos arquivos.');
+  }
+  e.target.value = '';
+});
+
+function withTimeout(promise, ms, label){
+  return Promise.race([
+    promise,
+    new Promise((_, reject)=> setTimeout(()=> reject(new Error(`Demorou mais de ${Math.round(ms/1000)}s (${label}). Verifique sua conexão e tente de novo.`)), ms))
+  ]);
+}
+
+form.addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter' && e.target.tagName !== 'TEXTAREA' && e.target.id !== 'formSubmitBtn'){
+    e.preventDefault();
+  }
+});
+
+async function saveAttachmentsFor(entryId){
+  if(guiaFotosPending.length === 0) return;
+  const { error } = await sb.from('attachments').upsert({ entry_id: entryId, files: guiaFotosPending });
+  if(error){
+    console.error(error);
+    showToast('Registro salvo, mas houve erro ao salvar os anexos.');
+  }else{
+    showToast('Anexos salvos.');
+  }
+}
+
+document.getElementById('formSubmitBtn').addEventListener('click', async (e)=>{
+  e.preventDefault();
+  try{
+    if(!secretaryName){
+      showToast('Faça login antes de enviar.');
+      window.scrollTo({top:0, behavior:'smooth'});
+      return;
+    }
+    if(!currentDoctor){ showToast('Selecione um médico.'); return; }
+
+    form.querySelectorAll('.field-invalid').forEach(el=> el.classList.remove('field-invalid'));
+
+    const dataSolicitacaoEl = document.getElementById('dataSolicitacao');
+    const pacienteEl = document.getElementById('paciente');
+    const olhoEl = document.getElementById('olho');
+    const comAnestesistaEl = document.getElementById('comAnestesista');
+    const convenioEl = document.getElementById('convenio');
+    const usaLenteEl = document.getElementById('usaLente');
+    const procedimentosMarcados = Array.from(form.querySelectorAll('input[name=procedimentoCheck]:checked')).map(c=>c.value);
+    const procTriggerEl = document.getElementById('procedimentoTrigger');
+
+    const invalidEls = [];
+    if(!dataSolicitacaoEl.value) invalidEls.push(dataSolicitacaoEl);
+    if(!pacienteEl.value.trim()) invalidEls.push(pacienteEl);
+    if(procedimentosMarcados.length === 0) invalidEls.push(procTriggerEl);
+    if(!olhoEl.value) invalidEls.push(olhoEl);
+    if(!comAnestesistaEl.value) invalidEls.push(comAnestesistaEl);
+    if(!usaLenteEl.value) invalidEls.push(usaLenteEl);
+    if(!convenioEl.value.trim()) invalidEls.push(convenioEl);
+
+    if(invalidEls.length > 0){
+      invalidEls.forEach(el=> el && el.classList.add('field-invalid'));
+      showToast('Preencha os campos destacados em vermelho.');
+      invalidEls[0].scrollIntoView({behavior:'smooth', block:'center'});
+      return;
+    }
+
+    const dataSolicitacaoVal = dataSolicitacaoEl.value;
+    const pacienteVal = pacienteEl.value.trim();
+    const olhoVal = olhoEl.value;
+    const comAnestesistaVal = comAnestesistaEl.value;
+    let convenioVal = convenioEl.value.trim();
+
+    const submitBtn = document.getElementById('formSubmitBtn');
+    const submitBtnOriginalText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Enviando…';
+
+    const procedimentoOutroVal = document.getElementById('procedimentoOutro').value.trim();
+    if(procedimentosMarcados.includes('Outro') && !procedimentoOutroVal){
+      document.getElementById('procedimentoOutro').classList.add('field-invalid');
+      showToast('Digite o procedimento em "Outro".');
+      document.getElementById('procedimentoOutro').scrollIntoView({behavior:'smooth', block:'center'});
+      return;
+    }
+    const procedimentoVal = procedimentosMarcados
+      .map(p => p === 'Outro' ? procedimentoOutroVal : p)
+      .join(' + ');
+
+    const usaLenteVal = usaLenteEl.value;
+    const solicitacaoLenteVal = (usaLenteVal === 'sim') ? document.getElementById('solicitacaoLente').value.trim() : '';
+    const lenteParticularValorVal = (usaLenteVal === 'nao') ? (parseFloat(document.getElementById('lenteParticularValor').value) || 0) : 0;
+    const obsBase = document.getElementById('observacoes').value.trim();
+
+    const commonFields = {
+      dataSolicitacao: dataSolicitacaoVal,
+      numeroGuia: document.getElementById('numeroGuia').value.trim(),
+      senhaGuia: document.getElementById('senhaGuia').value.trim(),
+      validadeGuia: document.getElementById('validadeGuia').value,
+      paciente: pacienteVal,
+      carteirinha: document.getElementById('carteirinha').value.trim(),
+      procedimento: procedimentoVal,
+      olho: olhoVal,
+      comAnestesista: comAnestesistaVal,
+      convenio: convenioVal,
+      usaLenteConvenio: usaLenteVal,
+      solicitacaoLente: solicitacaoLenteVal,
+      lenteParticularValor: lenteParticularValorVal,
+      observacoes: obsBase
+    };
+
+    let savedId;
+    if(editingEntryId){
+      await withTimeout(updateEntry(editingEntryId, commonFields), 12000, 'salvando alterações');
+      savedId = editingEntryId;
+      saveAttachmentsFor(savedId);
+      showToast('Alterações salvas.');
+    }else{
+      const entry = Object.assign({
+        medico: currentDoctor.name,
+        medicoRealizou: '',
+        dataCirurgia: '',
+        status: 'aguardando_autorizacao',
+        valorConvenio: 0,
+        valorLente: 0,
+        enviadoPor: secretaryName,
+        enviadoEm: new Date().toISOString()
+      }, commonFields);
+      const savedEntry = await withTimeout(addEntry(entry), 12000, 'enviando registro');
+      savedId = savedEntry.id;
+      saveAttachmentsFor(savedId);
+      showToast(`Registro enviado — ${currentDoctor.name}`);
+    }
+    submitBtn.textContent = '✓ Enviado!';
+    submitBtn.style.background = 'var(--primary)';
+    editingEntryId = null;
+    await new Promise(res => setTimeout(res, 600));
+    form.reset();
+    guiaFotosPending = [];
+    renderGuiaFotosPreview();
+    document.getElementById('solicitacaoLenteField').style.display = 'none';
+    document.getElementById('lenteParticularField').style.display = 'none';
+    document.getElementById('procedimentoOutro').style.display = 'none';
+    procTrigger.textContent = 'Selecione…';
+    procPanel.style.display = 'none';
+    submitBtn.disabled = false;
+    submitBtn.textContent = submitBtnOriginalText;
+    submitBtn.style.background = '';
+    viewForm.style.display = 'none';
+    activeStage = 'aguardando_autorizacao';
+    openHistoricoTab();
+  }catch(err){
+    const submitBtn = document.getElementById('formSubmitBtn');
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Enviar registro';
+    console.error('Erro no envio do formulário:', err);
+    showToast('Erro ao enviar: ' + (err && err.message ? err.message : 'erro desconhecido'));
+  }
+});
+
+function simNaoOptions(value){
+  return `<option value="" ${!value ? 'selected' : ''} disabled>Selecione…</option>
+    <option value="sim" ${value === 'sim' ? 'selected' : ''}>Sim</option>
+    <option value="nao" ${value === 'nao' ? 'selected' : ''}>Não</option>`;
+}
+
+function renderAgendamentoForm(data, id){
+  const procParts = (data.procedimento || '').split(' + ').map(s=>s.trim()).filter(Boolean);
+  const procPrincipal = procParts[0] || '—';
+  return `
+    <div class="agenda-panel" id="agenda-panel-${id}" style="display:none;">
+      <div class="agenda-title">Dados para Agendamento de Cirurgia — HUB LASER</div>
+      <div class="agenda-summary">
+        <b>Médico:</b> ${data.medico || '—'} &nbsp;·&nbsp; <b>Paciente:</b> ${data.paciente || '—'} &nbsp;·&nbsp;
+        <b>Convênio:</b> ${data.convenio || '—'} &nbsp;·&nbsp; <b>Olho a ser operado:</b> ${data.olho || '—'} &nbsp;·&nbsp;
+        <b>Com anestesista:</b> ${data.comAnestesista === 'sim' ? 'Sim' : (data.comAnestesista === 'nao' ? 'Não' : '—')} &nbsp;·&nbsp;
+        <b>Procedimento principal:</b> ${procPrincipal}
+      </div>
+
+      <div class="agenda-section-title">1) Identificação do médico cirurgião</div>
+      <div class="field-row">
+        <div class="field-col">
+          <label for="ag-crm-${id}">CRM</label>
+          <input type="text" id="ag-crm-${id}" data-id="${id}" data-field="agendaCrm" value="${data.agendaCrm || ''}" placeholder="CRM">
+        </div>
+      </div>
+
+      <div class="agenda-section-title">2) Dados do paciente</div>
+      <div class="field-row">
+        <div class="field-col">
+          <label for="ag-nasc-${id}">Data de nascimento</label>
+          <input type="date" id="ag-nasc-${id}" data-id="${id}" data-field="agendaDataNascimento" value="${data.agendaDataNascimento || ''}">
+        </div>
+        <div class="field-col">
+          <label for="ag-cpf-${id}">CPF</label>
+          <div style="display:flex; gap:6px; align-items:center;">
+            <input type="password" id="ag-cpf-${id}" data-id="${id}" data-field="agendaCpf" value="${data.agendaCpf || ''}" placeholder="CPF" autocomplete="off" style="flex:1;">
+            <button type="button" class="cpf-toggle-btn" data-cpf-toggle="ag-cpf-${id}" title="Mostrar/ocultar CPF">👁</button>
+          </div>
+        </div>
+        <div class="field-col">
+          <label for="ag-tel-${id}">Telefone</label>
+          <input type="text" id="ag-tel-${id}" data-id="${id}" data-field="agendaTelefone" value="${data.agendaTelefone || ''}" placeholder="Telefone">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field-col wide">
+          <label for="ag-end-${id}">Endereço</label>
+          <input type="text" id="ag-end-${id}" data-id="${id}" data-field="agendaEndereco" value="${data.agendaEndereco || ''}" placeholder="Endereço completo">
+        </div>
+        <div class="field-col">
+          <label for="ag-formapg-${id}">Forma de pagamento</label>
+          <input type="text" id="ag-formapg-${id}" data-id="${id}" data-field="agendaFormaPagamento" value="${data.agendaFormaPagamento || ''}" placeholder="Ex: Convênio, Particular">
+        </div>
+      </div>
+
+      <div class="agenda-section-title">3) Dados da cirurgia</div>
+      <div class="field-row">
+        <div class="field-col">
+          <label for="ag-hora-${id}">Horário</label>
+          <input type="time" id="ag-hora-${id}" data-id="${id}" data-field="agendaHorario" value="${data.agendaHorario || ''}">
+        </div>
+        <div class="field-col">
+          <label for="ag-tempo-${id}">Tempo cirúrgico previsto</label>
+          <input type="text" id="ag-tempo-${id}" data-id="${id}" data-field="agendaTempoPrevisto" value="${data.agendaTempoPrevisto || ''}" placeholder="Ex: 45 min">
+        </div>
+      </div>
+      <div class="opt" style="margin-top:6px;">Data da cirurgia e olho a ser operado: preenchidos acima.</div>
+
+      <div class="agenda-section-title">4) Procedimentos</div>
+      <div class="field-row">
+        <div class="field-col wide">
+          <label for="ag-procsec-${id}">Procedimento secundário <span class="opt">(se houver)</span></label>
+          <input type="text" id="ag-procsec-${id}" data-id="${id}" data-field="agendaProcedimentoSecundario" value="${data.agendaProcedimentoSecundario || ''}" placeholder="Procedimento secundário">
+        </div>
+      </div>
+
+      <div class="agenda-section-title">5) Materiais / Lentes (se aplicável)</div>
+      <div class="field-row">
+        <div class="field-col wide">
+          <label for="ag-material-${id}">Necessário material/instrumental especial? Qual</label>
+          <input type="text" id="ag-material-${id}" data-id="${id}" data-field="agendaMaterialEspecial" value="${data.agendaMaterialEspecial || ''}" placeholder="Descreva, se houver">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field-col">
+          <label for="ag-liotorica-${id}">LIO tórica?</label>
+          <select id="ag-liotorica-${id}" data-id="${id}" data-field="agendaLioTorica">${simNaoOptions(data.agendaLioTorica)}</select>
+        </div>
+        <div class="field-col">
+          <label for="ag-cobrarlio-${id}">Cobrar a LIO do convênio?</label>
+          <select id="ag-cobrarlio-${id}" data-id="${id}" data-field="agendaCobrarLio">${simNaoOptions(data.agendaCobrarLio)}</select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field-col wide">
+          <label for="ag-lioorigem-${id}">LIO do consultório ou do HUB? Qual LIO?</label>
+          <input type="text" id="ag-lioorigem-${id}" data-id="${id}" data-field="agendaLioOrigem" value="${data.agendaLioOrigem || ''}" placeholder="Ex: HUB — modelo X">
+        </div>
+      </div>
+
+      <div class="agenda-section-title">6) Pré-operatório</div>
+      <div class="field-row">
+        <div class="field-col">
+          <label for="ag-exames-${id}">Exames pré-operatórios feitos?</label>
+          <select id="ag-exames-${id}" data-id="${id}" data-field="agendaExamesFeitos">${simNaoOptions(data.agendaExamesFeitos)}</select>
+        </div>
+      </div>
+      <label class="split-check agenda-checkline">
+        <input type="checkbox" id="ag-orientexames-${id}" data-id="${id}" data-field="agendaOrientadoExames" ${data.agendaOrientadoExames ? 'checked' : ''}>
+        Paciente orientado a levar exames no dia da cirurgia
+      </label>
+
+      <div class="agenda-section-title">7) Pós-operatório / Orientações</div>
+      <div class="field-row">
+        <div class="field-col">
+          <label for="ag-orientretorno-${id}">Recebeu orientações sobre retorno cirúrgico?</label>
+          <select id="ag-orientretorno-${id}" data-id="${id}" data-field="agendaOrientacaoRetorno">${simNaoOptions(data.agendaOrientacaoRetorno)}</select>
+        </div>
+        <div class="field-col">
+          <label for="ag-dataretorno-${id}">Data do retorno</label>
+          <input type="date" id="ag-dataretorno-${id}" data-id="${id}" data-field="agendaDataRetorno" value="${data.agendaDataRetorno || ''}">
+        </div>
+        <div class="field-col">
+          <label for="ag-horaretorno-${id}">Hora do retorno</label>
+          <input type="time" id="ag-horaretorno-${id}" data-id="${id}" data-field="agendaHoraRetorno" value="${data.agendaHoraRetorno || ''}">
+        </div>
+      </div>
+
+      <div class="agenda-section-title">8) Alertas / Necessidades especiais</div>
+      <div class="field-row">
+        <div class="field-col">
+          <label for="ag-latex-${id}">Alérgico a látex?</label>
+          <select id="ag-latex-${id}" data-id="${id}" data-field="agendaAlergiaLatex">${simNaoOptions(data.agendaAlergiaLatex)}</select>
+        </div>
+        <div class="field-col wide">
+          <label for="ag-necesp-${id}">Necessidade de atendimento especial? Qual</label>
+          <input type="text" id="ag-necesp-${id}" data-id="${id}" data-field="agendaNecessidadeEspecial" value="${data.agendaNecessidadeEspecial || ''}" placeholder="Descreva, se houver">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field-col wide">
+          <label for="ag-cuidados-${id}">Cuidados especiais relevantes</label>
+          <textarea id="ag-cuidados-${id}" data-id="${id}" data-field="agendaCuidadosEspeciais" placeholder="Observações adicionais…">${data.agendaCuidadosEspeciais || ''}</textarea>
+        </div>
+      </div>
+
+      <div class="agenda-alert">
+        <b>ALERTA!</b>
+        Instrumental para a cirurgia deve ser entregue com 24 horas de antecedência para reprocessamento.<br>
+        Importante o médico levar carimbo para assinatura de prontuários e guias de convênios antes da saída.<br>
+        Ressaltamos que material especial deve ser solicitado com antecedência na farmácia do HUB LASER.
+      </div>
+    </div>
+  `;
+}
+
+function renderEntries(entries, containerEl, onChanged){
+  onChanged = onChanged || (()=>{});
+  containerEl.innerHTML = '';
+  entries.forEach((data)=>{
+    const id = data.id;
+    const el = document.createElement('div');
+    el.className = 'entry';
+    const dt = new Date(data.enviadoEm);
+    const dtStr = isNaN(dt) ? '' : dt.toLocaleString('pt-BR');
+    el.innerHTML = `
+      <div class="entry-top entry-top-clickable" data-toggle-details="${id}">
+        <div>
+          <div class="entry-medico">${data.paciente || '—'}</div>
+          <div class="entry-date">${data.medico || '—'} · enviado em ${dtStr}${data.enviadoPor ? ' · por ' + data.enviadoPor : ''}</div>
+        </div>
+        <span class="badge ${STAGE_BADGE_CLASS[data.status]}">${statusLabelFor(data)}</span>
+        ${data.glosa ? '<span class="badge" style="background:var(--pending-bg); color:var(--pending); margin-left:6px;">⚠ Glosa/Recusada</span>' : ''}
+        <span class="entry-toggle-arrow" id="entry-arrow-${id}">▾</span>
+      </div>
+      <div class="entry-details" id="entry-details-${id}" style="display:none;">
+      <div class="entry-grid">
+        <div><span class="k">Paciente</span>${data.paciente || '—'}</div>
+        ${data.carteirinha ? `<div><span class="k">Carteirinha</span>${data.carteirinha}</div>` : ''}
+        <div><span class="k">Data da solicitação</span>${fmtDate(data.dataSolicitacao)}</div>
+        ${data.numeroGuia ? `<div><span class="k">Nº da guia</span>${data.numeroGuia}</div>` : ''}
+        ${data.senhaGuia ? `<div><span class="k">Senha</span>${data.senhaGuia}</div>` : ''}
+        ${data.validadeGuia ? `<div><span class="k">Validade</span>${fmtDate(data.validadeGuia)}</div>` : ''}
+        <div><span class="k">Procedimento</span>${data.procedimento || '—'}</div>
+        <div><span class="k">Olho</span>${data.olho || '—'}</div>
+        ${data.comAnestesista ? `<div><span class="k">Com anestesista</span>${data.comAnestesista === 'sim' ? 'Sim' : 'Não'}</div>` : ''}
+        <div><span class="k">Convênio</span>${data.convenio || '—'}</div>
+        ${data.usaLenteConvenio === 'sim' ? `<div><span class="k">Lente do convênio</span>Sim${data.solicitacaoLente ? ' — ' + data.solicitacaoLente : ''}</div>` : ''}
+        ${data.usaLenteConvenio === 'nao' ? `<div><span class="k">Lente</span>Particular${data.lenteParticularValor ? ' — R$ ' + Number(data.lenteParticularValor).toFixed(2) : ''}</div>` : ''}
+        ${(data.status !== 'autorizada' && data.dataCirurgia) ? `<div><span class="k">Data da cirurgia</span>${fmtDate(data.dataCirurgia)}</div>` : ''}
+        ${isRateadoComCarlo(data) ? `<div><span class="k">Realizou</span>${data.medicoRealizou} <b style="color:var(--accent);">(rateio 50/50)</b></div>` : (data.status !== 'autorizada' && data.medicoRealizou) ? `<div><span class="k">Realizou</span>${data.medicoRealizou}</div>` : ''}
+        ${(data.status !== 'autorizado_convenio' && data.pacoteStatus) ? `<div><span class="k">Pacote</span>${data.pacoteStatus === 'autorizado' ? ('Autorizado' + (data.pacote ? ' — ' + data.pacote : '')) : 'Sem pacote'}</div>` : ''}
+      </div>
+      ${data.status === 'autorizado_convenio' ? `
+      <div class="valor-field" style="border-top:1px dashed var(--border); padding-top:10px; margin-top:8px;">
+        ${secretaryName === 'Autorização HUB' ? `
+        <label for="ps-${id}">Pacote</label>
+        <select id="ps-${id}" data-id="${id}" data-field="pacoteStatus" data-advance-on-pacote="${id}">
+          <option value="" ${!data.pacoteStatus ? 'selected' : ''} disabled>Selecione…</option>
+          <option value="autorizado" ${data.pacoteStatus === 'autorizado' ? 'selected' : ''}>Pacote autorizado</option>
+          <option value="sem_pacote" ${data.pacoteStatus === 'sem_pacote' ? 'selected' : ''}>Sem Pacote</option>
+        </select>
+        <div class="field-col" id="pacote-codigo-field-${id}" style="display:${data.pacoteStatus === 'autorizado' ? 'block' : 'none'}; margin-top:8px;">
+          <label for="pc-${id}">Código do pacote <span class="opt">(se houver mais de um, separe com "+", ex: 123456+352654)</span></label>
+          <input type="text" id="pc-${id}" data-id="${id}" data-field="pacote" placeholder="Ex: 123456+352654" value="${data.pacote || ''}">
+        </div>
+        ` : `
+        <div class="entry-date">Aguardando a Autorização lançar o pacote e a lente.</div>
+        `}
+      </div>
+      ` : ''}
+      ${data.status === 'autorizada' ? `
+      <div class="valor-field" style="border-top:1px dashed var(--border); padding-top:10px; margin-top:8px;">
+        ${(secretaryDoctors.includes(data.medico) || secretaryName === 'Autorização HUB') ? `
+        <label for="dc-${id}">Data cirurgia agendada para</label>
+        <input type="date" id="dc-${id}" data-id="${id}" data-field="dataCirurgia" value="${data.dataCirurgia || ''}">
+        <label for="mr-${id}">Médico que realizou <span class="opt">(se diferente do solicitante — opcional)</span></label>
+        <input type="text" id="mr-${id}" data-id="${id}" data-field="medicoRealizou" placeholder="Nome do médico" value="${data.medicoRealizou || ''}">
+        ` : `
+        <div class="entry-date">Aguardando a secretária do médico marcar a data da cirurgia.</div>
+        `}
+      </div>
+      ` : ''}
+      ${data.observacoes ? `<div class="entry-obs">${data.observacoes}</div>` : ''}
+      <div class="no-print">
+        <button type="button" class="guia-fotos-btn" data-fotos-id="${id}">📎 Anexos</button>
+        <div class="guia-fotos-preview" id="fotos-view-${id}" style="display:none;"></div>
+      </div>
+      ${HUB_IDENTITIES.includes(secretaryName) ? `
+      <div class="valor-field">
+        <label for="vc-${id}">Honorário médico (convênio)</label>
+        <input type="number" step="0.01" min="0" id="vc-${id}" data-id="${id}" data-field="valorConvenio" value="${(Number(data.valorConvenio)||0).toFixed(2)}">
+        ${data.status === 'concluida' ? `
+        <label class="split-check" style="margin-top:6px; margin-bottom:14px;">
+          <input type="checkbox" data-id="${id}" data-field="glosa" ${data.glosa ? 'checked' : ''}>
+          Glosa / Recusada pelo convênio <span class="opt">(fica aguardando pagamento até ser paga ou indeferida)</span>
+        </label>
+        ` : ''}
+        <label for="vl-${id}">Valor lente/LIO (só Dr. Irigaray)</label>
+        <input type="number" step="0.01" min="0" id="vl-${id}" data-id="${id}" data-field="valorLente" value="${(Number(data.valorLente)||0).toFixed(2)}">
+        ${(data.status === 'paga' || data.status === 'pagamento_efetuado') ? `
+        <label for="dp-${id}">Data de pagamento</label>
+        <input type="date" id="dp-${id}" data-id="${id}" data-field="dataPagamento" value="${data.dataPagamento || ''}">
+        ` : ''}
+        <div class="valor-liquido" id="liq-${id}">${liquidoTextoCompleto(data)}</div>
+        ${(data.status === 'paga' || data.status === 'pagamento_efetuado') ? `
+        <div class="split-row no-print">
+          <label class="split-check">
+            <input type="checkbox" data-id="${id}" data-field="honorarioDireto" ${data.honorarioDireto ? 'checked' : ''}>
+            Honorário pago direto em conta pelo convênio
+          </label>
+          ${(Number(data.valorLente)||0) > 0 ? `
+          <label class="split-check">
+            <input type="checkbox" data-id="${id}" data-field="lioPago" ${data.lioPago ? 'checked' : ''}>
+            LIO (R$ ${(Number(data.valorLente)||0).toFixed(2)}) já paga pelo hospital
+          </label>
+          ` : ''}
+          <div class="split-hint" id="hint-${id}">${splitHintText(data)}</div>
+        </div>
+        ` : ''}
+      </div>
+      ` : ''}
+      <div class="status-row no-print" style="margin-top:10px;">
+        <span class="entry-date">Status:</span>
+        <select data-id="${id}">
+          ${STATUS_STAGES.filter(s => canSetStatus(s, data) || data.status === s)
+            .map(s=>`<option value="${s}" ${data.status===s?'selected':''}>${data.status===s ? statusLabelFor(data) : STATUS_LABELS[s]}</option>`).join('')}
+        </select>
+        <span style="margin-left:auto; display:flex; gap:8px;">
+          ${data.status === 'autorizado_convenio' ? `<button type="button" class="btn-small" data-agenda-toggle="${id}">📋 Formulário de agendamento</button>` : ''}
+          ${(data.enviadoPor && data.enviadoPor === secretaryName && data.status === 'aguardando_autorizacao') ? `<button type="button" class="btn-small" data-edit-id="${id}">Editar</button>` : ''}
+          ${(data.enviadoPor && data.enviadoPor === secretaryName) ? `<button type="button" class="btn-small danger" data-delete-id="${id}">Excluir</button>` : ''}
+        </span>
+      </div>
+      ${data.status === 'autorizado_convenio' ? renderAgendamentoForm(data, id) : ''}
+      </div>
+    `;
+    containerEl.appendChild(el);
+  });
+
+  containerEl.querySelectorAll('[data-toggle-details]').forEach(row=>{
+    row.addEventListener('click', ()=>{
+      const id = row.getAttribute('data-toggle-details');
+      const details = document.getElementById('entry-details-' + id);
+      const arrow = document.getElementById('entry-arrow-' + id);
+      if(!details) return;
+      const isOpen = details.style.display !== 'none';
+      details.style.display = isOpen ? 'none' : 'block';
+      if(arrow) arrow.textContent = isOpen ? '▾' : '▴';
+    });
+  });
+
+  containerEl.querySelectorAll('button[data-agenda-toggle]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      requestDownloadAccess(()=>{
+        const id = btn.getAttribute('data-agenda-toggle');
+        const panel = document.getElementById('agenda-panel-' + id);
+        if(!panel) return;
+        const isOpen = panel.style.display !== 'none';
+        panel.style.display = isOpen ? 'none' : 'block';
+        btn.textContent = isOpen
+          ? '📋 Formulário de agendamento'
+          : '📋 Fechar formulário de agendamento';
+      });
+    });
+  });
+
+  containerEl.querySelectorAll('button[data-fotos-id]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const id = btn.getAttribute('data-fotos-id');
+      const box = document.getElementById('fotos-view-' + id);
+      if(box.style.display !== 'none'){
+        box.style.display = 'none';
+        return;
+      }
+      if(box.dataset.loaded === 'true'){
+        requestDownloadAccess(()=>{ box.style.display = 'flex'; });
+        return;
+      }
+      requestDownloadAccess(async ()=>{
+        btn.disabled = true;
+        const originalText = btn.textContent;
+        btn.textContent = 'Carregando…';
+        try{
+          const { data, error } = await sb.from('attachments').select('files').eq('entry_id', id).maybeSingle();
+          if(error) throw error;
+          const raw = (data && data.files) ? data.files : [];
+          const fotos = raw.map(f => (typeof f === 'string')
+            ? { name: 'foto.jpg', mime: 'image/jpeg', isImage: true, dataUrl: f }
+            : f);
+          if(fotos.length === 0){
+            box.innerHTML = '<div class="opt" style="margin-top:6px;">Nenhum anexo.</div>';
+          }else{
+            box.innerHTML = fotos.map(f => f.isImage
+              ? `<div class="guia-foto-thumb"><img src="${f.dataUrl}" title="Toque para ampliar"></div>`
+              : `<div class="guia-foto-thumb is-file" data-open-file="${f.dataUrl}" title="${f.name}"><div class="ext">📄</div><div class="ext" style="font-size:10px;">${fileExt(f.name)}</div><div class="fname">${f.name}</div></div>`
+            ).join('');
+            box.querySelectorAll('img').forEach(im=> im.addEventListener('click', ()=> window.open(im.src, '_blank')));
+            box.querySelectorAll('[data-open-file]').forEach(el=> el.addEventListener('click', ()=> window.open(el.getAttribute('data-open-file'), '_blank')));
+          }
+          box.dataset.loaded = 'true';
+          box.style.display = 'flex';
+          btn.textContent = originalText;
+        }catch(err){
+          box.innerHTML = '<div class="opt" style="margin-top:6px;">Nenhum anexo.</div>';
+          box.dataset.loaded = 'true';
+          box.style.display = 'flex';
+          btn.textContent = originalText;
+        }
+        btn.disabled = false;
+      });
+    });
+  });
+
+  containerEl.querySelectorAll('button[data-edit-id]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const id = btn.getAttribute('data-edit-id');
+      const entry = entries.find(en => en.id === id);
+      if(!entry){ showToast('Registro não encontrado.'); return; }
+      openFormForEdit(entry);
+    });
+  });
+
+  containerEl.querySelectorAll('button[data-delete-id]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      if(btn.dataset.armed !== 'true'){
+        btn.dataset.armed = 'true';
+        btn.textContent = 'Confirmar exclusão?';
+        setTimeout(()=>{
+          if(btn.dataset.armed === 'true'){
+            btn.dataset.armed = 'false';
+            btn.textContent = 'Excluir';
+          }
+        }, 4000);
+        return;
+      }
+      const id = btn.getAttribute('data-delete-id');
+      btn.disabled = true;
+      btn.textContent = 'Excluindo…';
+      try{
+        await deleteEntry(id);
+        showToast('Registro excluído.');
+        onChanged();
+      }catch(err){
+        console.error(err);
+        showToast('Erro ao excluir registro.');
+        btn.disabled = false;
+        btn.dataset.armed = 'false';
+        btn.textContent = 'Excluir';
+      }
+    });
+  });
+
+  containerEl.querySelectorAll('select[data-id]').forEach(sel=>{
+    sel.addEventListener('change', async (e)=>{
+      const id = e.target.getAttribute('data-id');
+      const field = e.target.getAttribute('data-field');
+      if(field === 'pacoteStatus'){
+        const codigoField = document.getElementById('pacote-codigo-field-' + id);
+        if(codigoField) codigoField.style.display = (e.target.value === 'autorizado') ? 'block' : 'none';
+        try{
+          const changes = { pacoteStatus: e.target.value };
+          const entry = entries.find(en => en.id === id);
+          if(entry && e.target.value && canSetStatus('autorizada', entry)){
+            changes.status = 'autorizada';
+          }
+          await updateEntry(id, changes);
+          showToast(changes.status ? 'Pacote salvo — cirurgia liberada pra agendar.' : 'Atualizado.');
+          if(changes.status) onChanged();
+        }catch(err){ console.error(err); showToast('Erro ao salvar.'); }
+        return;
+      }
+      if(field){
+        try{
+          await updateEntry(id, {[field]: e.target.value});
+          showToast('Atualizado.');
+        }catch(err){ console.error(err); showToast('Erro ao salvar.'); }
+        return;
+      }
+      const newStatus = e.target.value;
+      const entry = entries.find(en => en.id === id);
+      if(entry && !canSetStatus(newStatus, entry)){
+        let requiredIdentity;
+        if(newStatus === 'autorizado_convenio'){
+          requiredIdentity = (entry.medico === CARLO_NOME)
+            ? 'Autorização HUB'
+            : `a secretária de ${entry.medico} ou Autorização HUB`;
+        }else if(newStatus === 'autorizada'){
+          requiredIdentity = `a secretária de ${entry.medico} ou Autorização HUB`;
+        }else if(newStatus === 'concluida'){
+          requiredIdentity = CENTRO_CIRURGICO_NOME;
+        }else if(newStatus === 'paga'){
+          requiredIdentity = 'Faturamento HUB ou Financeiro HUB';
+        }else{
+          requiredIdentity = RESTRICTED_STAGES[newStatus] || 'um usuário autorizado';
+        }
+        showToast(`Só ${requiredIdentity} pode marcar "${STATUS_LABELS[newStatus]}".`);
+        onChanged();
+        return;
+      }
+      try{
+        await updateEntry(id, {status: newStatus});
+        onChanged();
+      }catch(err){ console.error(err); showToast('Erro ao salvar status.'); }
+    });
+  });
+
+  containerEl.querySelectorAll('input[type=number][data-id]').forEach(inp=>{
+    inp.addEventListener('change', async (e)=>{
+      const id = e.target.getAttribute('data-id');
+      const field = e.target.getAttribute('data-field');
+      const val = Math.round((parseFloat(e.target.value) || 0) * 100) / 100;
+      e.target.value = val.toFixed(2);
+      try{
+        const updated = await updateEntry(id, {[field]: val});
+        const liqEl = document.getElementById('liq-' + id);
+        if(liqEl && updated) liqEl.textContent = liquidoTextoCompleto(updated);
+        showToast('Valor atualizado.');
+      }catch(err){ console.error(err); showToast('Erro ao salvar valor.'); }
+    });
+  });
+
+  containerEl.querySelectorAll('input[type=date][data-id]').forEach(inp=>{
+    inp.addEventListener('change', async (e)=>{
+      const id = e.target.getAttribute('data-id');
+      const field = e.target.getAttribute('data-field');
+      try{
+        await updateEntry(id, {[field]: e.target.value});
+        showToast('Atualizado.');
+        if(field === 'dataCirurgia') onChanged();
+      }catch(err){ console.error(err); showToast('Erro ao salvar data.'); }
+    });
+  });
+
+  containerEl.querySelectorAll('input[type=time][data-id]').forEach(inp=>{
+    inp.addEventListener('change', async (e)=>{
+      const id = e.target.getAttribute('data-id');
+      const field = e.target.getAttribute('data-field');
+      try{
+        await updateEntry(id, {[field]: e.target.value});
+        showToast('Atualizado.');
+      }catch(err){ console.error(err); showToast('Erro ao salvar horário.'); }
+    });
+  });
+
+  containerEl.querySelectorAll('input[type=text][data-id]').forEach(inp=>{
+    inp.addEventListener('change', async (e)=>{
+      const id = e.target.getAttribute('data-id');
+      const field = e.target.getAttribute('data-field');
+      try{
+        await updateEntry(id, {[field]: e.target.value.trim()});
+        showToast('Atualizado.');
+      }catch(err){ console.error(err); showToast('Erro ao salvar.'); }
+    });
+  });
+
+  containerEl.querySelectorAll('input[type=password][data-id]').forEach(inp=>{
+    inp.addEventListener('change', async (e)=>{
+      const id = e.target.getAttribute('data-id');
+      const field = e.target.getAttribute('data-field');
+      try{
+        await updateEntry(id, {[field]: e.target.value.trim()});
+        showToast('Atualizado.');
+      }catch(err){ console.error(err); showToast('Erro ao salvar.'); }
+    });
+  });
+
+  containerEl.querySelectorAll('button[data-cpf-toggle]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const inputId = btn.getAttribute('data-cpf-toggle');
+      const input = document.getElementById(inputId);
+      if(!input) return;
+      input.type = (input.type === 'password') ? 'text' : 'password';
+    });
+  });
+
+  containerEl.querySelectorAll('input[type=checkbox][data-id]').forEach(chk=>{
+    chk.addEventListener('change', async (e)=>{
+      const id = e.target.getAttribute('data-id');
+      const field = e.target.getAttribute('data-field');
+      try{
+        const updated = await updateEntry(id, {[field]: e.target.checked});
+        const hintEl = document.getElementById('hint-' + id);
+        if(hintEl && updated) hintEl.textContent = splitHintText(updated);
+        showToast('Atualizado.');
+      }catch(err){ console.error(err); showToast('Erro ao salvar.'); }
+    });
+  });
+
+  containerEl.querySelectorAll('textarea[data-id]').forEach(ta=>{
+    ta.addEventListener('change', async (e)=>{
+      const id = e.target.getAttribute('data-id');
+      const field = e.target.getAttribute('data-field');
+      try{
+        await updateEntry(id, {[field]: e.target.value.trim()});
+        showToast('Atualizado.');
+      }catch(err){ console.error(err); showToast('Erro ao salvar.'); }
+    });
+  });
+}
+
+let activeStage = 'aguardando_autorizacao';
+
+function renderStageChips(){
+  const row = document.getElementById('stageFilterRow');
+  row.innerHTML = '';
+  if(secretaryName === CENTRO_CIRURGICO_NOME) return;
+  const seenLabels = new Set();
+  STATUS_STAGES.forEach(stage=>{
+    const label = STAGE_MENU_LABELS[stage];
+    if(seenLabels.has(label)) return;
+    seenLabels.add(label);
+    const isActive = STAGE_MENU_LABELS[activeStage] === label;
+    const chip = document.createElement('button');
+    chip.className = 'filter-chip' + (isActive ? ' active' : '');
+    chip.textContent = label;
+    chip.addEventListener('click', ()=>{
+      activeStage = stage;
+      renderStageChips();
+      loadHistorico();
+    });
+    row.appendChild(chip);
+  });
+}
+
+async function loadHistorico(){
+  if(!secretaryName){
+    historicoList.innerHTML = '<div class="empty">Faça login para ver as solicitações.</div>';
+    histCount.textContent = 'Solicitadas';
+    return;
+  }
+  historicoList.innerHTML = '<div class="empty">Carregando…</div>';
+  try{
+    let entries = await fetchAllEntries();
+    entries = entries.filter(d => secretaryDoctors.length === 0 || secretaryDoctors.includes(d.medico));
+    entries = entries.filter(d => STAGE_MENU_LABELS[d.status] === STAGE_MENU_LABELS[activeStage]);
+    entries = entries.slice().sort((a,b)=> (dataEfetiva(b)).localeCompare(dataEfetiva(a)) || new Date(b.enviadoEm) - new Date(a.enviadoEm));
+    histCount.textContent = `${STAGE_MENU_LABELS[activeStage]} (${entries.length})`;
+    if(entries.length === 0){
+      historicoList.innerHTML = `<div class="empty">Nenhum registro em "${STAGE_MENU_LABELS[activeStage]}".</div>`;
+      return;
+    }
+    if(activeStage === 'pagamento_efetuado'){
+      renderRepasseEfetuadoList(entries, historicoList);
+    }else if(secretaryName === CENTRO_CIRURGICO_NOME && STAGE_MENU_LABELS[activeStage] === 'Aguardando cirurgia'){
+      renderAguardandoCirurgiaListaCentroCirurgico(entries, historicoList, loadHistorico);
+    }else{
+      renderEntries(entries, historicoList, loadHistorico);
+    }
+  }catch(err){
+    console.error(err);
+    historicoList.innerHTML = '<div class="empty">Erro ao carregar histórico.</div>';
+  }
+}
+
+function renderAguardandoCirurgiaListaCentroCirurgico(entries, containerEl, onChanged){
+  containerEl.innerHTML = '';
+  entries.forEach(data=>{
+    const id = data.id;
+    const el = document.createElement('div');
+    el.className = 'entry';
+    el.innerHTML = `
+      <div class="entry-top" style="margin-bottom:8px;">
+        <div>
+          <div class="entry-medico">${data.paciente || '—'}</div>
+          <div class="entry-date">${data.medico || '—'}${data.medicoRealizou ? ' (realiza: ' + data.medicoRealizou + ')' : ''} · ${data.convenio || '—'}</div>
+        </div>
+        <span class="badge ${STAGE_BADGE_CLASS[data.status]}">${fmtDate(data.dataCirurgia) || 'Sem data'}</span>
+      </div>
+      <div class="field-row" style="margin-top:0;">
+        <div class="field-col wide">
+          <label for="cc-realizou-${id}">Médico que realizou <span class="opt">(se diferente do solicitante)</span></label>
+          <input type="text" id="cc-realizou-${id}" placeholder="Nome do médico" value="${data.medicoRealizou || ''}">
+        </div>
+      </div>
+      <button type="button" class="btn-small primary" data-concluir-id="${id}" style="margin-top:10px;">✓ Marcar Concluído</button>
+    `;
+    containerEl.appendChild(el);
+  });
+
+  containerEl.querySelectorAll('button[data-concluir-id]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const id = btn.getAttribute('data-concluir-id');
+      const realizouInput = document.getElementById('cc-realizou-' + id);
+      const realizouVal = realizouInput ? realizouInput.value.trim() : '';
+      btn.disabled = true;
+      btn.textContent = 'Salvando…';
+      try{
+        await updateEntry(id, { status: 'concluida', medicoRealizou: realizouVal });
+        showToast('Cirurgia marcada como concluída.');
+        onChanged();
+      }catch(err){
+        console.error(err);
+        showToast('Erro ao marcar concluído.');
+        btn.disabled = false;
+        btn.textContent = '✓ Marcar Concluído';
+      }
+    });
+  });
+}
+
+function renderRepasseEfetuadoList(entries, containerEl){
+  containerEl.innerHTML = '';
+  const isHubViewer = HUB_IDENTITIES.includes(secretaryName);
+  entries.forEach(data=>{
+    const el = document.createElement('div');
+    el.className = 'entry readonly';
+    el.innerHTML = `
+      <div class="entry-top" style="margin-bottom:0;">
+        <div>
+          <div class="entry-medico">${data.paciente || '—'}</div>
+          <div class="entry-date">${data.convenio || '—'} · Pago em ${fmtDate(data.dataPagamento || dataEfetiva(data))}${isRateadoComCarlo(data) ? ' · metade (rateio Dr. Carlo)' : ''}</div>
+        </div>
+        <span class="badge st-pagamento_efetuado">${isHubViewer ? brl(calcNet(data)) : '✓ Pago'}</span>
+      </div>
+    `;
+    containerEl.appendChild(el);
+  });
+}
+
+document.getElementById('refreshHistBtn').addEventListener('click', loadHistorico);
+document.getElementById('printHistBtn').addEventListener('click', ()=> window.print());
+
+document.getElementById('exportBtn').addEventListener('click', async ()=>{
+  try{
+    let entries = await fetchAllEntries();
+    if(secretaryDoctors.length){
+      entries = entries.filter(e => secretaryDoctors.includes(e.medico));
+    }
+    entries = entries.slice().sort((a,b)=> (dataEfetiva(b)).localeCompare(dataEfetiva(a)) || new Date(b.enviadoEm) - new Date(a.enviadoEm));
+
+    const isHubViewer = HUB_IDENTITIES.includes(secretaryName);
+    const valorCol = isHubViewer ? '<th>Valor líquido</th>' : '';
+
+    const rows = entries.map(d => `
+      <tr>
+        <td>${d.medico||''}</td>
+        <td>${d.medicoRealizou||''}</td>
+        <td>${fmtDate(d.dataSolicitacao)}</td>
+        <td>${fmtDate(d.dataCirurgia)}</td>
+        <td>${d.paciente||''}</td>
+        <td>${d.procedimento||''}</td>
+        <td>${d.olho||''}</td>
+        <td>${d.convenio||''}</td>
+        <td>${d.observacoes||''}</td>
+        <td>${d.enviadoPor||''}</td>
+        ${isHubViewer ? `<td>${brl(calcNet(d))}</td>` : ''}
+        <td>${STATUS_LABELS[d.status] || d.status}</td>
+      </tr>`).join('');
+
+    const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+      <title>Registros de Cirurgias — Exportado</title>
+      <style>
+        body{font-family:Arial,sans-serif;padding:24px;color:#182726;}
+        h1{font-size:20px;}
+        table{border-collapse:collapse;width:100%;font-size:12.5px;}
+        th,td{border:1px solid #DCE6E3;padding:8px 10px;text-align:left;}
+        th{background:#123B3A;color:#fff;}
+        tr:nth-child(even){background:#F3F6F5;}
+      </style></head><body>
+      <h1>Registros de Cirurgias — exportado em ${new Date().toLocaleString('pt-BR')}</h1>
+      <table><thead><tr>
+        <th>Médico</th><th>Realizou</th><th>Data solicitação</th><th>Data cirurgia</th><th>Paciente</th>
+        <th>Procedimento</th><th>Olho</th><th>Convênio</th><th>Observações</th><th>Enviado por</th>${valorCol}<th>Status</th>
+      </tr></thead><tbody>${rows}</tbody></table>
+      </body></html>`;
+
+    const blob = new Blob([html], {type:'text/html'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `registros_cirurgias_${new Date().toISOString().slice(0,10)}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }catch(err){
+    console.error(err);
+    showToast('Erro ao exportar.');
+  }
+});
+
+/* ---------- FINANCEIRO ---------- */
+
+function currentYearMonth(){
+  const d = new Date();
+  return d.toISOString().slice(0,7);
+}
+
+let finInitialized = false;
+
+function initFinanceiro(){
+  try{
+    if(!finInitialized){
+      const sel = document.getElementById('finDoctorSelect');
+      const monthInput = document.getElementById('finMonthInput');
+      if(!sel || !monthInput){
+        showToast('Erro: campos do Financeiro não encontrados na página.');
+        return;
+      }
+      const allowedDoctors = secretaryDoctors.length ? doctors.filter(d=>secretaryDoctors.includes(d.name)) : doctors;
+      if(secretaryDoctors.length === 1){
+        sel.innerHTML = `<option value="${secretaryDoctors[0]}">${secretaryDoctors[0]}</option>`;
+        sel.disabled = true;
+      }else{
+        sel.innerHTML = '<option value="todos">Todos os médicos</option>' +
+          allowedDoctors.map(d=>`<option value="${d.name}">${d.name}</option>`).join('');
+        sel.disabled = false;
+      }
+      monthInput.value = currentYearMonth();
+      sel.addEventListener('change', loadFinanceiro);
+      monthInput.addEventListener('change', loadFinanceiro);
+      const pdfBtnEl = document.getElementById('pdfBtn');
+      if(pdfBtnEl) pdfBtnEl.addEventListener('click', gerarPdfPendencias);
+      const cleanupBtn = document.getElementById('cleanup2025Btn');
+      if(cleanupBtn) cleanupBtn.addEventListener('click', handleCleanup2025Click);
+      const printFinBtnEl = document.getElementById('printFinBtn');
+      if(printFinBtnEl) printFinBtnEl.addEventListener('click', ()=> window.print());
+      const auditBtn = document.getElementById('auditLogToggleBtn');
+      if(auditBtn) auditBtn.addEventListener('click', toggleAuditLog);
+      finInitialized = true;
+    }
+    loadFinanceiro();
+  }catch(err){
+    console.error('Erro ao iniciar Financeiro:', err);
+    showToast('Erro ao carregar Financeiro: ' + (err && err.message ? err.message : 'desconhecido'));
+  }
+}
+
+let finCurrentData = { doctor:'todos', month: currentYearMonth(), items: [] };
+
+async function loadFinanceiro(){
+  const doctorFilter = document.getElementById('finDoctorSelect').value;
+  const month = document.getElementById('finMonthInput').value;
+  document.getElementById('finList').innerHTML = '<div class="empty">Carregando…</div>';
+
+  let entries = [];
+  try{
+    entries = await fetchAllEntries();
+  }catch(err){
+    console.error(err);
+    document.getElementById('finList').innerHTML = '<div class="empty">Erro ao carregar dados.</div>';
+    return;
+  }
+
+  if(secretaryDoctors.length){
+    entries = entries.filter(d => secretaryDoctors.includes(d.medico));
+  }
+
+  const filtered = entries.filter(d=>{
+    const matchDoctor = (doctorFilter === 'todos') || (d.medico === doctorFilter);
+    const matchMonth = !month || (dataEfetiva(d) && dataEfetiva(d).slice(0,7) === month);
+    const isPaga = d.status === 'paga';
+    return matchDoctor && matchMonth && isPaga;
+  });
+
+  const total = filtered.reduce((s,d)=> s + calcNet(d), 0);
+  const totalImposto = filtered.reduce((s,d)=> s + calcImposto(d), 0);
+  const pendentes = filtered;
+
+  document.getElementById('finTotal').textContent = brl(total);
+  document.getElementById('finImpostoTotal').textContent = brl(totalImposto);
+  document.getElementById('finListTitle').textContent = `Aguardando Repasse do Hospital (${pendentes.length})`;
+
+  finCurrentData = { doctor: doctorFilter, month, items: pendentes };
+
+  const finList = document.getElementById('finList');
+  if(pendentes.length === 0){
+    finList.innerHTML = '<div class="empty">Nenhuma pendência nesse filtro.</div>';
+    return;
+  }
+  pendentes.sort((a,b)=> (dataEfetiva(b)).localeCompare(dataEfetiva(a)));
+  finList.innerHTML = '';
+  pendentes.forEach(d=>{
+    const el = document.createElement('div');
+    el.className = 'entry readonly';
+    el.innerHTML = `
+      <div class="entry-top" style="margin-bottom:0;">
+        <div>
+          <div class="entry-medico">${d.paciente || '—'}</div>
+          <div class="entry-date">${d.convenio || '—'} · Imposto: ${brl(calcImposto(d))}</div>
+        </div>
+        <span class="badge pendente">${brl(calcNet(d))}</span>
+      </div>
+    `;
+    finList.appendChild(el);
+  });
+}
+
+let cleanup2025Armed = false;
+
+async function handleCleanup2025Click(){
+  const btn = document.getElementById('cleanup2025Btn');
+  if(!cleanup2025Armed){
+    cleanup2025Armed = true;
+    btn.textContent = 'Confirmar: apagar tudo de 2025?';
+    btn.style.color = 'var(--pending)';
+    setTimeout(()=>{
+      if(cleanup2025Armed){
+        cleanup2025Armed = false;
+        btn.textContent = 'Limpar registros de 2025';
+        btn.style.color = '';
+      }
+    }, 5000);
+    return;
+  }
+  cleanup2025Armed = false;
+  btn.textContent = 'Limpando…';
+  try{
+    const arr = await fetchAllEntries();
+    const remover = arr.filter(e => e.dataCirurgia && e.dataCirurgia.startsWith('2025'));
+    if(remover.length > 0){
+      const { error } = await sb.from('surgery_entries').delete().in('id', remover.map(e=>e.id));
+      if(error) throw error;
+      const idsRemovidos = new Set(remover.map(e=>e.id));
+      allEntriesCache = arr.filter(e => !idsRemovidos.has(e.id));
+    }
+    showToast(`Removidos ${remover.length} registros de 2025.`);
+  }catch(err){
+    console.error(err);
+    showToast('Erro ao limpar registros de 2025.');
+  }
+  btn.textContent = 'Limpar registros de 2025';
+  btn.style.color = '';
+  loadFinanceiro();
+}
+
+function gerarPdfPendencias(){
+  if(!window.jspdf){
+    showToast('Não foi possível carregar o gerador de PDF. Verifique sua conexão.');
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const { doctor, month, items } = finCurrentData;
+
+  const monthLabel = month ? month.split('-').reverse().join('/') : 'todos os períodos';
+  const doctorLabel = doctor === 'todos' ? 'Todos os médicos' : doctor;
+
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(15);
+  doc.text('Pendências de repasse', 14, 18);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(10);
+  doc.text(`Médico: ${doctorLabel}`, 14, 26);
+  doc.text(`Mês de referência: ${monthLabel}`, 14, 32);
+  doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 14, 38);
+
+  const rows = items.map(d => [
+    d.paciente || '',
+    d.convenio || '',
+    brl(calcImposto(d)),
+    brl(calcNet(d))
+  ]);
+  const total = items.reduce((s,d)=> s + calcNet(d), 0);
+  const totalImposto = items.reduce((s,d)=> s + calcImposto(d), 0);
+
+  doc.autoTable({
+    startY: 44,
+    head: [['Paciente','Convênio','Imposto (18%)','Valor líquido']],
+    body: rows,
+    styles: { fontSize: 10, cellPadding: 4 },
+    headStyles: { fillColor: [18,59,58] },
+    foot: [['Total', '', brl(totalImposto), brl(total)]],
+    footStyles: { fillColor: [243,246,245], textColor: [18,39,38], fontStyle: 'bold' }
+  });
+
+  const filename = `pendencias_${doctor === 'todos' ? 'todos' : doctor.replace(/\s+/g,'_')}_${month || 'geral'}.pdf`;
+  doc.save(filename);
+}
+</script>
+</body>
+</html>
