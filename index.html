@@ -1506,13 +1506,14 @@ function normalizeStatus(s){
 
 async function fetchAllEntries(){
   if(allEntriesCache) return allEntriesCache;
-  const { data, error } = await sb.from('surgery_entries').select('data');
+  if(!secretaryName || !secretaryPassword) return [];
+  const { data, error } = await sb.rpc('get_entries', { p_identity: secretaryName, p_password: secretaryPassword });
   if(error){
     console.error('Erro ao buscar cirurgias', error);
     showCriticalToast('Erro ao carregar os dados. Atualize a página (F5) pra tentar de novo.');
     throw error;
   }
-  allEntriesCache = (data || []).map(row => row.data);
+  allEntriesCache = data || [];
   allEntriesCache.forEach(e => { e.status = normalizeStatus(e.status); });
   return allEntriesCache;
 }
@@ -1521,11 +1522,12 @@ const AUDIT_LOG_MAX = 500;
 
 async function logAudit(action, entryId, details){
   try{
-    const { error } = await sb.from('audit_log').insert({
-      user: secretaryName || '—',
-      action,       // 'criar' | 'editar' | 'excluir'
-      entry_id: entryId,
-      details: details || ''
+    const { error } = await sb.rpc('log_audit', {
+      p_identity: secretaryName,
+      p_password: secretaryPassword,
+      p_action: action,       // 'criar' | 'editar' | 'excluir'
+      p_entry_id: entryId,
+      p_details: details || ''
     });
     if(error) console.error('Erro ao registrar log de auditoria', error);
   }catch(err){
@@ -1540,7 +1542,7 @@ function resumoAlteracoes(changes){
 async function addEntry(entry){
   const arr = allEntriesCache || await fetchAllEntries();
   entry.id = 'e_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
-  const { error } = await sb.from('surgery_entries').insert({ id: entry.id, data: entry });
+  const { error } = await sb.rpc('upsert_entry', { p_identity: secretaryName, p_password: secretaryPassword, p_id: entry.id, p_data: entry });
   if(error){ console.error(error); throw error; }
   arr.push(entry);
   logAudit('criar', entry.id, `Paciente: ${entry.paciente || '—'} · Médico: ${entry.medico || '—'}`);
@@ -1552,7 +1554,7 @@ async function updateEntry(id, changes){
   const item = arr.find(e => e.id === id);
   if(!item) return null;
   Object.assign(item, changes);
-  const { error } = await sb.from('surgery_entries').update({ data: item, updated_at: new Date().toISOString() }).eq('id', id);
+  const { error } = await sb.rpc('upsert_entry', { p_identity: secretaryName, p_password: secretaryPassword, p_id: id, p_data: item });
   if(error){ console.error(error); throw error; }
   logAudit('editar', id, resumoAlteracoes(changes));
   return item;
@@ -1563,7 +1565,7 @@ async function deleteEntry(id){
   const idx = arr.findIndex(e => e.id === id);
   if(idx === -1) return false;
   const removido = arr[idx];
-  const { error } = await sb.from('surgery_entries').delete().eq('id', id);
+  const { error } = await sb.rpc('delete_entry', { p_identity: secretaryName, p_password: secretaryPassword, p_id: id });
   if(error){ console.error(error); throw error; }
   arr.splice(idx, 1);
   logAudit('excluir', id, `Paciente: ${removido.paciente || '—'} · Médico: ${removido.medico || '—'}`);
@@ -1571,7 +1573,6 @@ async function deleteEntry(id){
 }
 
 /* ---------- Trava extra de download (anexos + formulário de agendamento) ---------- */
-const DOWNLOAD_PASSWORD = '362514';
 let downloadUnlocked = false;
 
 function hasDownloadAccess(){
@@ -1592,8 +1593,9 @@ function requestDownloadAccess(onGranted){
     cancelBtn.removeEventListener('click', onCancel);
     input.removeEventListener('keydown', onKeydown);
   };
-  const onConfirm = ()=>{
-    if(input.value === DOWNLOAD_PASSWORD){
+  const onConfirm = async ()=>{
+    const { data, error } = await sb.rpc('verificar_download_password', { p_password: input.value });
+    if(!error && data === true){
       downloadUnlocked = true;
       cleanup();
       onGranted();
@@ -1628,7 +1630,7 @@ async function toggleAuditLog(){
   if(auditLogLoaded) return;
   box.innerHTML = '<div class="empty">Carregando…</div>';
   try{
-    const { data, error } = await sb.from('audit_log').select('*').order('ts', { ascending: false }).limit(AUDIT_LOG_MAX);
+    const { data, error } = await sb.rpc('get_audit_log', { p_identity: secretaryName, p_password: secretaryPassword, p_limit: AUDIT_LOG_MAX });
     if(error) throw error;
     if(!data || data.length === 0){
       box.innerHTML = '<div class="empty">Nenhum evento registrado ainda.</div>';
@@ -1757,46 +1759,57 @@ function initialsOf(name){
 }
 
 let secretaryDoctors = [];
+let secretaryPassword = null;
 
 const HUB_IDENTITIES = ['Autorização HUB', 'Faturamento HUB', 'Financeiro HUB'];
 const CENTRO_CIRURGICO_NOME = 'Secretaria Centro Cirúrgico';
 const RESTRITOS_DO_FORMULARIO = [CENTRO_CIRURGICO_NOME, 'Faturamento HUB', 'Financeiro HUB'];
 
-const CREDENTIALS = {
-  'Carlo de Castro Wille': { password: '142536', medicos: ['Carlo de Castro Wille'] },
-  'Mariana Corte Real':    { password: 'Mcreal',       medicos: ['Mariana Corte Real'] },
-  'Eduardo Becker':        { password: 'EBecker',      medicos: ['Eduardo Becker'] },
-  'Amilton Irigaray':      { password: 'Irigaray1425', medicos: ['Amilton Irigaray'] },
-  'Jose Eduardo Cassou':   { password: 'Jecassou',     medicos: ['Jose Eduardo Cassou'] },
-  'Joao Deitrich':         { password: 'Joao4059',     medicos: ['Joao Deitrich'] },
-  'Alexandre Bomfim Rodrigues': { password: 'Abrodrigues', medicos: ['Alexandre Bomfim Rodrigues'] },
-  'Autorização HUB':       { password: '142536', medicos: [] },
-  'Faturamento HUB':       { password: '142536', medicos: [] },
-  'Financeiro HUB':        { password: '142536', medicos: [] },
-  [CENTRO_CIRURGICO_NOME]: { password: '142536', medicos: [] },
-};
+// Confere identidade+senha direto no banco -- a senha nunca fica salva em texto no código da página.
+async function verifyLogin(identity, password){
+  const { data, error } = await sb.rpc('app_login', { p_identity: identity, p_password: password });
+  if(error) return null;
+  return data; // { identity, medicos }
+}
 
-function loadSecretaryName(){
-  secretaryName = localStorage.getItem('secretariaNome') || null;
-  if(secretaryName && CREDENTIALS[secretaryName]){
-    secretaryDoctors = CREDENTIALS[secretaryName].medicos;
+async function loadSecretaryName(){
+  const savedName = localStorage.getItem('secretariaNome');
+  const savedPass = localStorage.getItem('secretariaSenha');
+  if(!savedName || !savedPass){
+    secretaryName = null;
+    secretaryPassword = null;
+    secretaryDoctors = [];
+    return;
+  }
+  const result = await verifyLogin(savedName, savedPass);
+  if(result){
+    secretaryName = savedName;
+    secretaryPassword = savedPass;
+    secretaryDoctors = result.medicos || [];
   }else{
     secretaryName = null;
+    secretaryPassword = null;
     secretaryDoctors = [];
+    localStorage.removeItem('secretariaNome');
+    localStorage.removeItem('secretariaSenha');
   }
 }
 
-function saveSecretaryName(name){
+function saveSecretaryName(name, password, medicos){
   secretaryName = name;
-  secretaryDoctors = CREDENTIALS[name] ? CREDENTIALS[name].medicos : [];
+  secretaryPassword = password;
+  secretaryDoctors = medicos || [];
   localStorage.setItem('secretariaNome', name);
+  localStorage.setItem('secretariaSenha', password);
   updateNavForIdentity();
 }
 
 function logout(){
   secretaryName = null;
+  secretaryPassword = null;
   secretaryDoctors = [];
   localStorage.removeItem('secretariaNome');
+  localStorage.removeItem('secretariaSenha');
   updateNavForIdentity();
 }
 
@@ -1835,9 +1848,9 @@ function renderLoginGate(containerId, onSuccess){
       const passEl = document.getElementById('loginPassword-' + containerId);
       const pass = passEl ? passEl.value : '';
       if(!who){ showToast('Selecione quem você é.'); return false; }
-      const cred = CREDENTIALS[who];
-      if(cred && cred.password === pass){
-        saveSecretaryName(who);
+      const result = await verifyLogin(who, pass);
+      if(result){
+        saveSecretaryName(who, pass, result.medicos);
         el.style.display = 'none';
         el.innerHTML = '';
         if(onSuccess) onSuccess();
@@ -1945,13 +1958,13 @@ function renderDoctorCardPasswordForm(card, doc){
       <button type="button" class="identity-edit" id="cardCancel-${id}" style="margin-top:6px;">cancelar</button>
     </div>
   `;
-  const submitHandler = (e)=>{
+  const submitHandler = async (e)=>{
     if(e && e.preventDefault) e.preventDefault();
     const passEl = document.getElementById('cardPass-' + id);
     const pass = passEl ? passEl.value : '';
-    const cred = CREDENTIALS[doc.name];
-    if(cred && cred.password === pass){
-      saveSecretaryName(doc.name);
+    const result = await verifyLogin(doc.name, pass);
+    if(result){
+      saveSecretaryName(doc.name, pass, result.medicos);
       openForm(doc);
     }else{
       showToast('Senha incorreta.');
@@ -2058,9 +2071,9 @@ async function openFormForEdit(entry){
   guiaFotosPending = [];
   renderGuiaFotosPreview();
   try{
-    const { data, error } = await sb.from('attachments').select('files').eq('entry_id', entry.id).maybeSingle();
+    const { data, error } = await sb.rpc('get_attachments', { p_identity: secretaryName, p_password: secretaryPassword, p_entry_id: entry.id });
     if(error) throw error;
-    const fotos = (data && data.files) ? data.files : [];
+    const fotos = data || [];
     guiaFotosPending = fotos.map(f => (typeof f === 'string')
       ? { name: 'foto.jpg', mime: 'image/jpeg', isImage: true, dataUrl: f }
       : f);
@@ -2186,7 +2199,7 @@ tabFaturamentoBtn.addEventListener('click', ()=> { allEntriesCache = null; openH
 tabFinBtn.addEventListener('click', ()=> { allEntriesCache = null; openFinTab(); });
 
 (async function initApp(){
-  loadSecretaryName();
+  await loadSecretaryName();
   updateNavForIdentity();
   try{
     await fetchAllEntries();
@@ -2420,7 +2433,7 @@ form.addEventListener('keydown', (e)=>{
 
 async function saveAttachmentsFor(entryId){
   if(guiaFotosPending.length === 0) return;
-  const { error } = await sb.from('attachments').upsert({ entry_id: entryId, files: guiaFotosPending });
+  const { error } = await sb.rpc('upsert_attachments', { p_identity: secretaryName, p_password: secretaryPassword, p_entry_id: entryId, p_files: guiaFotosPending });
   if(error){
     console.error(error);
     showToast('Registro salvo, mas houve erro ao salvar os anexos.');
@@ -2884,9 +2897,9 @@ function renderEntries(entries, containerEl, onChanged){
         const originalText = btn.textContent;
         btn.textContent = 'Carregando…';
         try{
-          const { data, error } = await sb.from('attachments').select('files').eq('entry_id', id).maybeSingle();
+          const { data, error } = await sb.rpc('get_attachments', { p_identity: secretaryName, p_password: secretaryPassword, p_entry_id: id });
           if(error) throw error;
-          const raw = (data && data.files) ? data.files : [];
+          const raw = data || [];
           const fotos = raw.map(f => (typeof f === 'string')
             ? { name: 'foto.jpg', mime: 'image/jpeg', isImage: true, dataUrl: f }
             : f);
@@ -3412,7 +3425,7 @@ async function handleCleanup2025Click(){
     const arr = await fetchAllEntries();
     const remover = arr.filter(e => e.dataCirurgia && e.dataCirurgia.startsWith('2025'));
     if(remover.length > 0){
-      const { error } = await sb.from('surgery_entries').delete().in('id', remover.map(e=>e.id));
+      const { error } = await sb.rpc('delete_entries_bulk', { p_identity: secretaryName, p_password: secretaryPassword, p_ids: remover.map(e=>e.id) });
       if(error) throw error;
       const idsRemovidos = new Set(remover.map(e=>e.id));
       allEntriesCache = arr.filter(e => !idsRemovidos.has(e.id));
