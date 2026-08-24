@@ -2236,6 +2236,139 @@ tabFinBtn.addEventListener('click', ()=> { allEntriesCache = null; openFinTab();
   }
 })();
 
+/* ---------- Pacotes de convênio (portado do PORTAL HUB LASER.html, card Autorização de Cirurgias) ----------
+   Postal Saúde excluída de propósito: convênio rescindido (ver PORTAL HUB LASER.html). */
+const PACOTES_CIRURGIAS = [
+  {"codigo": "30309000", "desc": "PACOTE VITRECTOMIA VIAS PARS PLANA+FACECTOMIA COM LENTE INTRA-OCULAR COM FACOEMULSIFICAÇÃO", "convenio": "UNIMED", "principal": "30307120", "alternativos": ["30306027", "30307066", "30312086", "30312094"]},
+  {"codigo": "30309808", "desc": "PACOTE DE VITRECTOMIA VIAS PARS PLANA+ENDOLASER/ENDODIATERMIA+TROCA DE FLUIDO GASOSA+RETIRADA DE ÓLEO", "convenio": "UNIMED", "principal": "30307120", "alternativos": ["30307031", "30307090", "30307082"]},
+  {"codigo": "50038036", "desc": "PACOTE DE PTERÍGIO - EXÉRESE + TRANSPLANTE DE CONJUNTIVA", "itemCodes": ["30303010", "30303060"], "convenio": "UNIMED"},
+  {"codigo": "50049100", "desc": "PACOTE DE PKR - TRADICIONAL", "itemCodes": ["30304091", "30304105"], "convenio": "UNIMED"},
+  {"codigo": "50079069", "desc": "PACOTE DE VITRECTOMIA VIA PARS PLANA+ENDOLASER/ENDODIATERMIA+IMPLANTE DE SILICONE INTRAVITREO", "convenio": "UNIMED", "principal": "30307120", "alternativos": ["30307031", "30307040"]},
+  {"codigo": "50149040", "desc": "PACOTE DE VITRECTOMIA VIA PARS PLANA+RETINOPEXIA+MEMBRANECTOMIA+IMPLANTE E/OU RETIRADA DE SILICONE", "convenio": "UNIMED", "principal": "30307120", "alternativos": ["30312086", "30307066", "30307040", "30307082"]},
+  {"codigo": "84500280", "desc": "CIRURGIA REFRATIVA UNILATERAL", "itemCodes": ["30304105", "30304091"], "convenio": "BRADESCO"},
+  {"codigo": "84500018", "desc": "TRANSPLANTE DE CÓRNEA + FACECTOMIA POR FACOEMULSIFICAÇÃO + LIO", "itemCodes": ["31501010", "30306027"], "convenio": "BRADESCO"},
+  {"codigo": "84500034", "desc": "FACECTOMIA POR FACOEMULSIFICAÇÃO + LIO + TRABECULECTOMIA", "itemCodes": ["30306027", "30310075"], "convenio": "BRADESCO"},
+  {"codigo": "84500042", "desc": "FACECTOMIA POR FACOEMULSIFICAÇÃO + LIO + VITRECTOMIA ANTERIOR", "itemCodes": ["30306027", "30307112"], "convenio": "BRADESCO"},
+  {"codigo": "84500069", "desc": "FACECTOMIA EXTRACAPSULAR AUTOMATIZADA + LIO + TRABECULECTOMIA", "itemCodes": ["30306035", "30310075"], "convenio": "BRADESCO"},
+  {"codigo": "84500077", "desc": "FACECTOMIA ECP AUTOMATIZADA COM OU SEM LIO + VITRECTOMIA ANTERIOR", "itemCodes": ["30306035", "30307112"], "convenio": "BRADESCO"},
+  {"codigo": "84500093", "desc": "IMPLANTE SECUNDÁRIO + VITRECTOMIA ANTERIOR + FIXAÇÃO DE LIO", "itemCodes": ["30306060", "30307112", "30306051"], "convenio": "BRADESCO"},
+  {"codigo": "84500107", "desc": "VITRECTOMIA VIA PARS PLANA + RETINOPEXIA", "itemCodes": ["30307120", "30312086"], "convenio": "BRADESCO"},
+  {"codigo": "84500115", "desc": "VITRECTOMIA VIA PARS PLANA + ENDOLASER", "itemCodes": ["30307120", "30307031"], "convenio": "BRADESCO"},
+  {"codigo": "84500123", "desc": "VITRECTOMIA VIA PARS PLANA + REMOÇÃO DE ÓLEO DE SILICONE", "itemCodes": ["30307120", "30307082"], "convenio": "BRADESCO"},
+  {"codigo": "84500131", "desc": "VITRECTOMIA VIA PARS PLANA + RETINOPEXIA + ENDOLASER", "itemCodes": ["30307120", "30312086", "30307031"], "convenio": "BRADESCO"},
+  {"codigo": "84500140", "desc": "VITRECTOMIA VIA PARS PLANA + IMPLANTE DE ÓLEO DE SILICONE", "itemCodes": ["30307120", "30307040"], "convenio": "BRADESCO"},
+  {"codigo": "84500158", "desc": "VITRECTOMIA VIA PARS PLANA + RETINOPEXIA + ENDOLASER + ÓLEO DE SILICONE", "itemCodes": ["30307120", "30312086", "30307031", "30307040"], "convenio": "BRADESCO"},
+  {"codigo": "84500166", "desc": "VITRECTOMIA VIA PARS PLANA + RETINOPEXIA + ENDOLASER + ÓLEO DE SILICONE + FACO + LIO", "itemCodes": ["30307120", "30312086", "30307031", "30307040", "30306027"], "convenio": "BRADESCO"},
+  {"codigo": "84500174", "desc": "TRANSPLANTE DE CÓRNEA + VITRECTOMIA ANTERIOR COM FIXAÇÃO OU REPOSIÇÃO DE LIO", "itemCodes": ["31501010", "30307112", "30306051"], "convenio": "BRADESCO"},
+  {"codigo": "99303010", "desc": "PACOTE PTERIGIO + AUTOTRANSPLANTE CONJUNTIVAL", "itemCodes": ["30303060", "30303010"], "convenio": "LEVMED"},
+  {"codigo": "99306027", "desc": "PACOTE CÓDIGO DE FACO + VITRE ANTERIOR", "itemCodes": ["30306027", "30307112"], "convenio": "LEVMED"},
+  {"codigo": "98011282", "desc": "PCT FACECTOMIA COM LENTE INTRA-OCULAR COM FACOEMULSIFICAÇÃO + CIRURGIAS FISTULIZANTES ANTIGLAUCOMATOSAS", "itemCodes": ["30306027", "30310032"], "convenio": "NOSSA SAUDE"},
+  {"codigo": "98011301", "desc": "PCT PTERÍGIO - EXÉRESE + AUTOTRANSPLANTE CONJUNTIVAL + PLÁSTICA DE CONJUNTIVA - COM SUTURA", "itemCodes": ["30303060", "30303010", "30303052"], "convenio": "NOSSA SAUDE"},
+  {"codigo": "98011302", "desc": "PCT PTERÍGIO - EXÉRESE + AUTOTRANSPLANTE CONJUNTIVAL + PLÁSTICA DE CONJUNTIVA - COM COLA", "itemCodes": ["30303060", "30303010", "30303052"], "convenio": "NOSSA SAUDE"},
+  {"codigo": "98011306", "desc": "PCT VITRECTOMIA VIAS PARS PLANA + RETINOPEXIA COM INTROFLEXÃO ESCLERAL + RETINOPEXIA PNEUMÁTICA + ENDOLASER/ENDODIATERMIA + IMPLANTE DE SILICONE INTRAVÍTREO + INFUSÃO DE PERFLUOCARBONO + MEMBRANECTOMIA EPI OU SUB-RETINIANA + TROCA FLUIDO GASOSA + INFUSÃO DE GÁS EXPANSOR + RETIRADA DE ÓLEO DE SILICONE VIA PARS PLANA", "itemCodes": ["30307120", "30312086", "30312094", "30307031", "30307040", "30307058", "30307066", "30307090", "30312051", "30307082"], "convenio": "NOSSA SAUDE"},
+  {"codigo": "98011307", "desc": "PCT FACECTOMIA COM LENTE INTRA-OCULAR COM FACOEMULSIFICAÇÃO + FACECTOMIA SEM IMPLANTE + VITRECTOMIA VIAS PARS PLANA + RETINOPEXIA COM INTROFLEXÃO ESCLERAL + RETINOPEXIA PNEUMÁTICA + ENDOLASER/ENDODIATERMIA + IMPLANTE DE SILICONE INTRAVÍTREO + INFUSÃO DE PERFLUOCARBONO + MEMBRANECTOMIA EPI OU SUB-RETINIANA + TROCA FLUIDO GASOSA + INFUSÃO DE GÁS EXPANSOR + IMPLANTE SECUNDÁRIO / EXPLANTE / FIXAÇÃO ESCLERAL OU IRIANA + RETIRADA DE ÓLEO DE SILICONE VIA PARS PLANA + SUTURA DE CÓRNEA (COM OU SEM HÉRNIA DE ÍRIS) + RECONSTRUÇÃO DA CÂMARA ANTERIOR", "itemCodes": ["30306027", "30306043", "30307120", "30312086", "30312094", "30307031", "30307040", "30307058", "30307066", "30307090", "30312051", "30306060", "30307082", "30304067", "30305020"], "convenio": "NOSSA SAUDE"},
+  {"codigo": "98011308", "desc": "PCT VITRECTOMIA VIAS PARS PLANA + ENDOLASER/ENDODIATERMIA + IMPLANTE DE SILICONE INTRAVÍTREO", "itemCodes": ["30307120", "30307031", "30307040"], "convenio": "NOSSA SAUDE"},
+  {"codigo": "98011309", "desc": "PCT RETINOPEXIA COM INTROFLEXÃO ESCLERAL + RETINOPEXIA PNEUMÁTICA", "itemCodes": ["30312086", "30312094"], "convenio": "NOSSA SAUDE"},
+  {"codigo": "98011314", "desc": "PCT ESTRABISMO CICLO VERTICAL/TRANSPOSIÇÃO + ESTRABISMO HORIZONTAL - COM SEDAÇÃO", "itemCodes": ["30311039", "30311047"], "convenio": "NOSSA SAUDE"},
+  {"codigo": "98011315", "desc": "PCT ESTRABISMO CICLO VERTICAL/TRANSPOSIÇÃO + ESTRABISMO HORIZONTAL - COM ANESTESIA GERAL", "itemCodes": ["30311039", "30311047"], "convenio": "NOSSA SAUDE"},
+  {"codigo": "98011319", "desc": "PCT IMPLANTE DE ANEL INTRA-ESTROMAL + CROSS-LINKING (CXL) DE COLÁGENO CORNEANO", "itemCodes": ["30304083", "30304156"], "convenio": "NOSSA SAUDE"},
+  {"codigo": "60360020", "desc": "PACOTE - REMOÇÃO DE ÓLEO DE SILICONE + FACECTOMIA COM IMPLANTE DE L.I.O COM FACOEMULSIFICAÇÃO", "itemCodes": ["30307082", "30306027"], "convenio": "SC SAUDE"},
+  {"codigo": "60360038", "desc": "PACOTE - VITRECTOMIA VIA PARS PLANA + IMPLANTE DE ÓLEO DE SILICONE", "itemCodes": ["30307120", "30307040"], "convenio": "SC SAUDE"},
+  {"codigo": "60360046", "desc": "PACOTE- VITRECTOMIA VIA PARS PLANA + FACECTOMIA COM IMPLANTE DE L.I.O. SEM FACOEMULSIFICAÇÃO + IMPLANTE DE ÓLEO DE SILICONE", "itemCodes": ["30307120", "30306035", "30307040"], "convenio": "SC SAUDE"},
+  {"codigo": "60360054", "desc": "PACOTE- VITRECTOMIA VIA PARS PLANA + FACECTOMIA COM IMPLANTE DE L.I.O. COM FACOEMULSIFICAÇÃO + GÁS", "itemCodes": ["30307120", "30306027", "30307090"], "convenio": "SC SAUDE"},
+  {"codigo": "60360062", "desc": "PACOTE- VITRECTOMIA VIA PARS PLANA (COM GÁS)", "itemCodes": ["30307120", "30307090"], "convenio": "SC SAUDE"},
+  {"codigo": "98713620", "desc": "PACOTE- VITRECTOMIA VIA PARS PLANA (COM GÁS) + ENDOLASER/ENDODIATERMIA", "itemCodes": ["30307120", "30307090", "30307031"], "convenio": "SC SAUDE"},
+  {"codigo": "98713663", "desc": "PACOTE- VITRECTOMIA VIA PARS PLANA + FACECTOMIA COM IMPLANTE DE L.I.O. COM FACOEMULSIFICAÇÃO + ENDOLASER/ENDODIATERMIA", "itemCodes": ["30307120", "30306027", "30307031"], "convenio": "SC SAUDE"},
+  {"codigo": "98713841", "desc": "PACOTE- VITRECTOMIA VIA PARS PLANA + IMPLANTE DE ÓLEO DE SILICONE + ENDOLASER/ENDODIATERMIA", "itemCodes": ["30307120", "30307040", "30307031"], "convenio": "SC SAUDE"},
+  {"codigo": "98713612", "desc": "PACOTE- VITRECTOMIA VIA PARS PLANA (COM GÁS) + FACECTOMIA COM IMPLANTE DE L.I.O. SEM FACOEMULSIFICAÇÃO + IMPLANTE DE ÓLEO DE SILICONE + ENDOLASER/ENDODIATERMIA", "itemCodes": ["30307120", "30307090", "30306035", "30307040", "30307031"], "convenio": "SC SAUDE"},
+  {"codigo": "98713639", "desc": "PACOTE- RETINOPEXIA COM INTROFLEXÃO ESCLERAL + FOTOCOAGULAÇÃO À LASER (POR SESSÃO) + RETINOPEXIA PNEUMÁTICA E RETINOPEXIA PROFILÁTICA", "itemCodes": ["30312086", "30312043", "30312094", "30312108"], "convenio": "SC SAUDE"},
+  {"codigo": "98713647", "desc": "PACOTE- RETINOPEXIA COM INTROFLEXÃO ESCLERAL + FOTOCOAGULAÇÃO À LASER (POR SESSÃO) + RETINOPEXIA PROFILÁTICA", "itemCodes": ["30312086", "30312043", "30312108"], "convenio": "SC SAUDE"},
+  {"codigo": "60360089", "desc": "PACOTE- RETINOPEXIA COM INTROFLEXÃO ESCLERAL + VITRECTOMIA + ENDOFOTOCOAGULAÇÃO + IMPLANTE DE ÓLEO DE SILICONE", "itemCodes": ["30312086", "30307120", "30307031", "30307040"], "convenio": "SC SAUDE"},
+  {"codigo": "60360097", "desc": "PACOTE - RETINOPEXIA PNEUMÁTICA + RETINOPEXIA PROFILÁTICA + FOTOCOAGULAÇÃO", "itemCodes": ["30312094", "30312108", "30312043"], "convenio": "SC SAUDE"},
+  {"codigo": "60360100", "desc": "PACOTE - ESTRABISMO HORIZONTAL (MONOCULAR) + ESTRABISMO CICLOVERTICAL (MONOCULAR)", "itemCodes": ["30311047", "30311039"], "convenio": "SC SAUDE"},
+  {"codigo": "60360178", "desc": "PACOTE - PTERÍGIO EXÉRESE + TRANSPLANTE DE CONJUNTIVA", "itemCodes": ["30303060", "30303010"], "convenio": "SC SAUDE"},
+  {"codigo": "60360216", "desc": "PACOTE - FACECTOMIA COM IMPLANTE DE L.I.O. COM FACOEMULSIFICAÇÃO + CIRURGIA FISTULANTE ANTIGLAUCOMATOSA", "itemCodes": ["30306027", "30310032"], "convenio": "SC SAUDE"},
+  {"codigo": "60360224", "desc": "PACOTE - FACECTOMIA COM IMPLANTE DE L.I.O. S/ FACO + TRANSPLANTE DE CÓRNEA", "itemCodes": ["30306035", "31501010"], "convenio": "SC SAUDE"}
+];
+
+// Unimed/Bradesco/SC Saúde: Pterígio (30303060) geralmente já inclui Autotransplante conjuntival (30303010)
+// como procedimento casado, mesmo que a secretária não tenha marcado -- considerar isso ao sugerir pacote.
+const REGRAS_IMPLICITAS_PACOTE = [
+  { tussGatilho: '30303060', convenios: ['UNIMED', 'BRADESCO', 'SC SAUDE'], tussImplicito: '30303010' }
+];
+
+const MAPA_CONVENIO_PACOTES = {
+  'unimed': 'UNIMED',
+  'sc saude': 'SC SAUDE',
+  'saude bradesco': 'BRADESCO',
+  'bradesco': 'BRADESCO',
+  'levmed': 'LEVMED',
+  'nossa saude': 'NOSSA SAUDE',
+  'saude caixa': 'SAUDE CAIXA',
+  'select': 'SELECT',
+  'mediservice': 'MEDISERVECE',
+};
+
+function normalizarConvenioPacotes(convenioLivre){
+  const key = (convenioLivre || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  return MAPA_CONVENIO_PACOTES[key] || null;
+}
+
+function extrairCodigosTuss(procedimentoStr){
+  if(!procedimentoStr) return [];
+  return procedimentoStr.split(' + ')
+    .map(p => (p.trim().match(/^(\d+)/) || [])[1])
+    .filter(Boolean);
+}
+
+function pacoteTamanho(p){
+  if(p.itemCodes) return p.itemCodes.length;
+  if(p.principal && p.alternativos) return 1 + p.alternativos.length;
+  return 0;
+}
+
+// Mesmo algoritmo do PORTAL HUB LASER.html: casa do pacote mais específico (mais códigos) pro menos específico,
+// "consumindo" os códigos TUSS à medida que casam, pra não contar o mesmo procedimento em 2 pacotes diferentes.
+function findMatchedPacotes(effectiveCodes, convenio){
+  const remaining = new Set(effectiveCodes);
+  const pool = PACOTES_CIRURGIAS.filter(p => p.convenio === convenio);
+  const sorted = pool.slice().sort((a, b) => pacoteTamanho(b) - pacoteTamanho(a));
+  const matched = [];
+  sorted.forEach(p => {
+    if(p.principal && p.alternativos){
+      if(!remaining.has(p.principal)) return;
+      const alternativosPresentes = p.alternativos.filter(c => remaining.has(c));
+      if(alternativosPresentes.length === 0) return;
+      matched.push(p);
+      remaining.delete(p.principal);
+      alternativosPresentes.forEach(c => remaining.delete(c));
+      return;
+    }
+    if(!p.itemCodes || p.itemCodes.length < 2) return;
+    const allPresent = p.itemCodes.every(c => remaining.has(c));
+    if(!allPresent) return;
+    matched.push(p);
+    p.itemCodes.forEach(c => remaining.delete(c));
+  });
+  return matched;
+}
+
+// Sugere o(s) pacote(s) aplicável(is) pra uma solicitação, com base no(s) procedimento(s) + convênio.
+// Retorna [] se o convênio não tem pacotes cadastrados ou nenhuma combinação bate.
+function sugerirPacotes(entry){
+  const convenio = normalizarConvenioPacotes(entry.convenio);
+  if(!convenio) return [];
+  const codes = extrairCodigosTuss(entry.procedimento);
+  if(codes.length === 0) return [];
+  const set = new Set(codes);
+  REGRAS_IMPLICITAS_PACOTE.forEach(r => {
+    if(r.convenios.includes(convenio) && set.has(r.tussGatilho) && !set.has(r.tussImplicito)){
+      set.add(r.tussImplicito);
+    }
+  });
+  return findMatchedPacotes(Array.from(set), convenio);
+}
+
 function fmtDate(iso){
   if(!iso) return '—';
   const [y,m,d] = iso.split('-');
@@ -2845,6 +2978,12 @@ function renderEntries(entries, containerEl, onChanged){
       ${data.status === 'autorizado_convenio' ? `
       <div class="valor-field" style="border-top:1px dashed var(--border); padding-top:10px; margin-top:8px;">
         ${secretaryName === 'Autorização HUB' ? `
+        ${sugerirPacotes(data).length > 0 ? `
+        <div class="agenda-summary" style="margin-bottom:10px;">
+          <b>Pacote identificado pra essa combinação (${data.convenio}):</b><br>
+          ${sugerirPacotes(data).map(p => `${p.desc} — código <b>${p.codigo}</b>`).join('<br>')}
+        </div>
+        ` : ''}
         <label for="ps-${id}">Pacote</label>
         <select id="ps-${id}" data-id="${id}" data-field="pacoteStatus" data-advance-on-pacote="${id}">
           <option value="" ${!data.pacoteStatus ? 'selected' : ''} disabled>Selecione…</option>
