@@ -2975,10 +2975,20 @@ function renderEntries(entries, containerEl, onChanged){
         ${isRateadoComCarlo(data) ? `<div><span class="k">Realizou</span>${data.medicoRealizou} <b style="color:var(--accent);">(rateio 50/50)</b></div>` : (data.status !== 'autorizada' && data.status !== 'aguardando_agendamento' && data.medicoRealizou) ? `<div><span class="k">Realizou</span>${data.medicoRealizou}</div>` : ''}
         ${(data.status !== 'autorizado_convenio' && data.pacoteStatus) ? `<div><span class="k">Pacote</span>${data.pacoteStatus === 'autorizado' ? ('Autorizado' + (data.pacote ? ' — ' + data.pacote : '')) : 'Sem pacote'}</div>` : ''}
       </div>
-      ${(['procedimento_autorizado','pacote_solicitado'].includes(data.status) && secretaryName === 'Autorização HUB' && sugerirPacotes(data).length > 0) ? `
+      ${(data.status === 'procedimento_autorizado' && secretaryName === 'Autorização HUB' && sugerirPacotes(data).length > 0) ? `
       <div class="agenda-summary" style="margin-top:8px;">
-        <b>Pacote identificado pra essa combinação (${data.convenio}) — solicitar esse ao convênio:</b><br>
-        ${sugerirPacotes(data).map(p => `${p.desc} — código <b>${p.codigo}</b>`).join('<br>')}
+        <b>Pacote identificado pra essa combinação (${data.convenio}):</b>
+        ${sugerirPacotes(data).map(p => `
+          <div style="margin-top:8px; display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+            <span>${p.desc} — código <b>${p.codigo}</b></span>
+            <button type="button" class="btn-small primary" data-solicitar-pacote="${id}" data-pacote-codigo="${p.codigo}">Solicitar este pacote</button>
+          </div>
+        `).join('')}
+      </div>
+      ` : ''}
+      ${(data.status === 'pacote_solicitado' && secretaryName === 'Autorização HUB' && data.pacote) ? `
+      <div class="agenda-summary" style="margin-top:8px;">
+        <b>Pacote solicitado ao convênio:</b> código <b>${data.pacote}</b> — aguardando o convênio autorizar.
       </div>
       ` : ''}
       ${data.status === 'autorizado_convenio' ? `
@@ -3356,6 +3366,25 @@ function renderEntries(entries, containerEl, onChanged){
         await updateEntry(id, {[field]: e.target.value.trim()});
         showToast('Atualizado.');
       }catch(err){ console.error(err); showToast('Erro ao salvar.'); }
+    });
+  });
+
+  containerEl.querySelectorAll('button[data-solicitar-pacote]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const id = btn.getAttribute('data-solicitar-pacote');
+      const codigo = btn.getAttribute('data-pacote-codigo');
+      btn.disabled = true;
+      btn.textContent = 'Salvando…';
+      try{
+        await updateEntry(id, { pacote: codigo, pacoteStatus: 'autorizado', status: 'pacote_solicitado' });
+        showToast('Pacote solicitado — cirurgia movida pra "Pacote Solicitado".');
+        onChanged();
+      }catch(err){
+        console.error(err);
+        showToast('Erro ao solicitar pacote.');
+        btn.disabled = false;
+        btn.textContent = 'Solicitar este pacote';
+      }
     });
   });
 
