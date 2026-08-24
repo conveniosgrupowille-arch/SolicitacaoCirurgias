@@ -2253,12 +2253,17 @@ function validadeGuiaClass(entry){
   return '';
 }
 
-// Texto "vence em N dias" pra mostrar do lado do nome quando a guia está no aviso amarelo.
+// Texto "vence em N dias" / "vencida há N dias" pra mostrar do lado do nome, deixando explícito o motivo da cor.
 function validadeGuiaAviso(entry){
-  if(validadeGuiaClass(entry) !== 'guia-proxima') return '';
+  const classe = validadeGuiaClass(entry);
+  if(classe !== 'guia-proxima' && classe !== 'guia-vencida') return '';
   const hoje = new Date(); hoje.setHours(0,0,0,0);
   const validade = new Date(entry.validadeGuia + 'T00:00:00');
   const diffDias = Math.floor((validade - hoje) / (1000*60*60*24));
+  if(classe === 'guia-vencida'){
+    const diasVencida = Math.abs(diffDias);
+    return diasVencida === 1 ? 'vencida há 1 dia' : `vencida há ${diasVencida} dias`;
+  }
   if(diffDias === 0) return 'vence hoje';
   if(diffDias === 1) return 'vence em 1 dia';
   return `vence em ${diffDias} dias`;
@@ -2810,7 +2815,7 @@ function renderEntries(entries, containerEl, onChanged){
     el.innerHTML = `
       <div class="entry-top entry-top-clickable" data-toggle-details="${id}">
         <div>
-          <div class="entry-medico ${validadeGuiaClass(data)}">${data.paciente || '—'}${validadeGuiaAviso(data) ? ` <span style="font-size:11px; font-weight:600; color:#B8860B;">(${validadeGuiaAviso(data)})</span>` : ''}</div>
+          <div class="entry-medico ${validadeGuiaClass(data)}">${data.paciente || '—'}${validadeGuiaAviso(data) ? ` <span style="font-size:11px; font-weight:600; color:${validadeGuiaClass(data) === 'guia-vencida' ? '#C0392B' : '#B8860B'};">(${validadeGuiaAviso(data)})</span>` : ''}</div>
           <div class="entry-date">${data.medico || '—'} · enviado em ${dtStr}${data.enviadoPor ? ' · por ' + data.enviadoPor : ''}</div>
         </div>
         <span class="badge ${STAGE_BADGE_CLASS[data.status]}">${statusLabelFor(data)}</span>
@@ -3318,7 +3323,7 @@ function renderAguardandoCirurgiaListaCentroCirurgico(entries, containerEl, onCh
     el.innerHTML = `
       <div class="entry-top" style="margin-bottom:8px;">
         <div>
-          <div class="entry-medico ${validadeGuiaClass(data)}">${data.paciente || '—'}${validadeGuiaAviso(data) ? ` <span style="font-size:11px; font-weight:600; color:#B8860B;">(${validadeGuiaAviso(data)})</span>` : ''}</div>
+          <div class="entry-medico ${validadeGuiaClass(data)}">${data.paciente || '—'}${validadeGuiaAviso(data) ? ` <span style="font-size:11px; font-weight:600; color:${validadeGuiaClass(data) === 'guia-vencida' ? '#C0392B' : '#B8860B'};">(${validadeGuiaAviso(data)})</span>` : ''}</div>
           <div class="entry-date">${data.medico || '—'}${data.medicoRealizou ? ' (realiza: ' + data.medicoRealizou + ')' : ''} · ${data.convenio || '—'}</div>
         </div>
         <span class="badge ${STAGE_BADGE_CLASS[data.status]}">${fmtDate(data.dataCirurgia) || 'Sem data'}</span>
@@ -3364,7 +3369,7 @@ function renderRepasseEfetuadoList(entries, containerEl){
     el.innerHTML = `
       <div class="entry-top" style="margin-bottom:0;">
         <div>
-          <div class="entry-medico ${validadeGuiaClass(data)}">${data.paciente || '—'}${validadeGuiaAviso(data) ? ` <span style="font-size:11px; font-weight:600; color:#B8860B;">(${validadeGuiaAviso(data)})</span>` : ''}</div>
+          <div class="entry-medico ${validadeGuiaClass(data)}">${data.paciente || '—'}${validadeGuiaAviso(data) ? ` <span style="font-size:11px; font-weight:600; color:${validadeGuiaClass(data) === 'guia-vencida' ? '#C0392B' : '#B8860B'};">(${validadeGuiaAviso(data)})</span>` : ''}</div>
           <div class="entry-date">${data.convenio || '—'} · Pago em ${fmtDate(data.dataPagamento || dataEfetiva(data))}${isRateadoComCarlo(data) ? ' · metade (rateio Dr. Carlo)' : ''}</div>
         </div>
         <span class="badge st-pagamento_efetuado">${isHubViewer ? brl(calcNet(data)) : '✓ Pago'}</span>
