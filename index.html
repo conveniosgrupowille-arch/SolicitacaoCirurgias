@@ -382,6 +382,10 @@
     font-size:14.5px;
     color:var(--primary);
   }
+  .entry-medico.guia-vencida{ color:#C0392B; }
+  .entry-medico.guia-proxima{ color:#B8860B; }
+  .entry-top-clickable:hover .entry-medico.guia-vencida{ color:#C0392B; }
+  .entry-top-clickable:hover .entry-medico.guia-proxima{ color:#B8860B; }
   .entry-date{
     font-family:'IBM Plex Mono',monospace;
     font-size:12px;
@@ -2238,6 +2242,17 @@ function fmtDate(iso){
   return `${d}/${m}/${y}`;
 }
 
+// Só sinaliza validade da guia na etapa "Aguardando cirurgia" -- vermelho se já venceu, amarelo se faltam 7 dias ou menos.
+function validadeGuiaClass(entry){
+  if(entry.status !== 'autorizada' || !entry.validadeGuia) return '';
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const validade = new Date(entry.validadeGuia + 'T00:00:00');
+  const diffDias = Math.floor((validade - hoje) / (1000*60*60*24));
+  if(diffDias < 0) return 'guia-vencida';
+  if(diffDias <= 7) return 'guia-proxima';
+  return '';
+}
+
 function dataEfetiva(entry){
   return entry.dataCirurgia || entry.dataSolicitacao || '';
 }
@@ -2784,7 +2799,7 @@ function renderEntries(entries, containerEl, onChanged){
     el.innerHTML = `
       <div class="entry-top entry-top-clickable" data-toggle-details="${id}">
         <div>
-          <div class="entry-medico">${data.paciente || '—'}</div>
+          <div class="entry-medico ${validadeGuiaClass(data)}">${data.paciente || '—'}</div>
           <div class="entry-date">${data.medico || '—'} · enviado em ${dtStr}${data.enviadoPor ? ' · por ' + data.enviadoPor : ''}</div>
         </div>
         <span class="badge ${STAGE_BADGE_CLASS[data.status]}">${statusLabelFor(data)}</span>
@@ -3292,7 +3307,7 @@ function renderAguardandoCirurgiaListaCentroCirurgico(entries, containerEl, onCh
     el.innerHTML = `
       <div class="entry-top" style="margin-bottom:8px;">
         <div>
-          <div class="entry-medico">${data.paciente || '—'}</div>
+          <div class="entry-medico ${validadeGuiaClass(data)}">${data.paciente || '—'}</div>
           <div class="entry-date">${data.medico || '—'}${data.medicoRealizou ? ' (realiza: ' + data.medicoRealizou + ')' : ''} · ${data.convenio || '—'}</div>
         </div>
         <span class="badge ${STAGE_BADGE_CLASS[data.status]}">${fmtDate(data.dataCirurgia) || 'Sem data'}</span>
@@ -3338,7 +3353,7 @@ function renderRepasseEfetuadoList(entries, containerEl){
     el.innerHTML = `
       <div class="entry-top" style="margin-bottom:0;">
         <div>
-          <div class="entry-medico">${data.paciente || '—'}</div>
+          <div class="entry-medico ${validadeGuiaClass(data)}">${data.paciente || '—'}</div>
           <div class="entry-date">${data.convenio || '—'} · Pago em ${fmtDate(data.dataPagamento || dataEfetiva(data))}${isRateadoComCarlo(data) ? ' · metade (rateio Dr. Carlo)' : ''}</div>
         </div>
         <span class="badge st-pagamento_efetuado">${isHubViewer ? brl(calcNet(data)) : '✓ Pago'}</span>
