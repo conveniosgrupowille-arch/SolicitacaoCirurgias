@@ -1454,18 +1454,26 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let allEntriesCache = null;
 
-const STATUS_STAGES = ['aguardando_autorizacao','autorizado_convenio','autorizada','concluida','paga','pagamento_efetuado'];
+const STATUS_STAGES = ['aguardando_autorizacao','procedimento_solicitado','procedimento_autorizado','pacote_solicitado','autorizado_convenio','aguardando_agendamento','autorizada','concluida','paga','pagamento_efetuado'];
 const STATUS_LABELS = {
   aguardando_autorizacao: 'Pendente de autorização',
-  autorizado_convenio: 'Autorizado Convênio',
-  autorizada: 'Agendar',
+  procedimento_solicitado: 'Procedimento Solicitado',
+  procedimento_autorizado: 'Procedimento Autorizado',
+  pacote_solicitado: 'Pacote Solicitado',
+  autorizado_convenio: 'Autorizado Convênio (Procedimento e Pacote)',
+  aguardando_agendamento: 'Aguardando agendamento',
+  autorizada: 'Confirmada',
   concluida: 'Aguardando Pagamento do Convênio',
   paga: 'Aguardando Repasse do Hospital',
   pagamento_efetuado: 'Repasse Efetuado'
 };
 const STAGE_MENU_LABELS = {
   aguardando_autorizacao: 'Solicitadas',
+  procedimento_solicitado: 'Procedimento Solicitado',
+  procedimento_autorizado: 'Procedimento Autorizado',
+  pacote_solicitado: 'Pacote Solicitado',
   autorizado_convenio: 'Autorizadas',
+  aguardando_agendamento: 'Aguardando agendamento',
   autorizada: 'Aguardando cirurgia',
   concluida: 'Aguardando Pagamento do Convênio',
   paga: 'Aguardando Repasse do Hospital',
@@ -1473,7 +1481,11 @@ const STAGE_MENU_LABELS = {
 };
 const STAGE_BADGE_CLASS = {
   aguardando_autorizacao: 'st-aguardando_autorizacao',
+  procedimento_solicitado: 'st-aguardando_autorizacao',
+  procedimento_autorizado: 'st-autorizada',
+  pacote_solicitado: 'st-aguardando_autorizacao',
   autorizado_convenio: 'st-autorizada',
+  aguardando_agendamento: 'st-autorizada',
   autorizada: 'st-autorizada',
   concluida: 'st-concluida',
   paga: 'st-paga',
@@ -1482,13 +1494,21 @@ const STAGE_BADGE_CLASS = {
 const RESTRICTED_STAGES = { pagamento_efetuado: 'Financeiro HUB' };
 const CARLO_NOME = 'Carlo de Castro Wille';
 
+// Etapas de autorização junto ao convênio (procedimento e pacote são solicitados/autorizados
+// em separado antes de virar "Autorizado Convênio") -- mesma regra de quem pode mexer em todas.
+function _podeMexerNaAutorizacao(entry){
+  if(entry.medico === CARLO_NOME) return secretaryName === 'Autorização HUB';
+  return secretaryName === entry.medico || secretaryName === 'Autorização HUB';
+}
+
 function canSetStatus(newStatus, entry){
   if(newStatus === 'aguardando_autorizacao') return true;
-  if(newStatus === 'autorizado_convenio'){
-    if(entry.medico === CARLO_NOME) return secretaryName === 'Autorização HUB';
-    return secretaryName === entry.medico || secretaryName === 'Autorização HUB';
-  }
-  if(newStatus === 'autorizada') return secretaryName === entry.medico || secretaryName === 'Autorização HUB';
+  if(newStatus === 'procedimento_solicitado') return _podeMexerNaAutorizacao(entry);
+  if(newStatus === 'procedimento_autorizado') return _podeMexerNaAutorizacao(entry);
+  if(newStatus === 'pacote_solicitado') return _podeMexerNaAutorizacao(entry);
+  if(newStatus === 'autorizado_convenio') return _podeMexerNaAutorizacao(entry);
+  if(newStatus === 'aguardando_agendamento') return secretaryName === entry.medico || secretaryName === 'Autorização HUB';
+  if(newStatus === 'autorizada') return secretaryName === 'Autorização HUB';
   if(newStatus === 'concluida') return secretaryName === CENTRO_CIRURGICO_NOME;
   if(newStatus === 'paga') return secretaryName === 'Faturamento HUB' || secretaryName === 'Financeiro HUB';
   if(newStatus === 'pagamento_efetuado') return secretaryName === RESTRICTED_STAGES.pagamento_efetuado;
@@ -1681,7 +1701,7 @@ function isRateadoComCarlo(entry){
 }
 
 function statusLabelFor(entry){
-  if(entry.status === 'autorizada' && entry.dataCirurgia) return 'Agendado';
+  if(entry.status === 'aguardando_agendamento') return entry.dataCirurgia ? 'Aguardando confirmação' : 'Aguardando agendamento';
   return STATUS_LABELS[entry.status] || entry.status;
 }
 
@@ -2578,6 +2598,33 @@ function simNaoOptions(value){
     <option value="nao" ${value === 'nao' ? 'selected' : ''}>Não</option>`;
 }
 
+const FORMAS_PAGAMENTO_PARTICULAR = ['Pix', 'Dinheiro', 'Cartão Débito', 'Cartão Crédito'];
+
+function renderPagamentoRow(entryId, idx, p){
+  const opcoes = FORMAS_PAGAMENTO_PARTICULAR
+    .map(f => `<option value="${f}" ${p.formaPagamento === f ? 'selected' : ''}>${f}</option>`).join('');
+  return `
+    <div class="field-row" style="align-items:flex-end;">
+      <div class="field-col">
+        <label>Valor</label>
+        <input type="number" step="0.01" min="0" data-pagamento-field="valor" data-entry-id="${entryId}" data-pagamento-idx="${idx}" value="${(Number(p.valor)||0).toFixed(2)}">
+      </div>
+      <div class="field-col">
+        <label>Forma</label>
+        <select data-pagamento-field="formaPagamento" data-entry-id="${entryId}" data-pagamento-idx="${idx}">
+          <option value="" ${!p.formaPagamento ? 'selected' : ''} disabled>Selecione…</option>
+          ${opcoes}
+        </select>
+      </div>
+      <div class="field-col">
+        <label>Data</label>
+        <input type="date" data-pagamento-field="data" data-entry-id="${entryId}" data-pagamento-idx="${idx}" value="${p.data || ''}">
+      </div>
+      <button type="button" class="btn-small danger" data-remove-pagamento="${entryId}:${idx}" style="flex:none;">×</button>
+    </div>
+  `;
+}
+
 function renderAgendamentoForm(data, id){
   const procParts = (data.procedimento || '').split(' + ').map(s=>s.trim()).filter(Boolean);
   const procPrincipal = procParts[0] || '—';
@@ -2762,8 +2809,8 @@ function renderEntries(entries, containerEl, onChanged){
         <div><span class="k">Convênio</span>${data.convenio || '—'}</div>
         ${data.usaLenteConvenio === 'sim' ? `<div><span class="k">Lente do convênio</span>Sim${data.solicitacaoLente ? ' — ' + data.solicitacaoLente : ''}</div>` : ''}
         ${data.usaLenteConvenio === 'nao' ? `<div><span class="k">Lente</span>Particular${data.lenteParticularValor ? ' — R$ ' + Number(data.lenteParticularValor).toFixed(2) : ''}</div>` : ''}
-        ${(data.status !== 'autorizada' && data.dataCirurgia) ? `<div><span class="k">Data da cirurgia</span>${fmtDate(data.dataCirurgia)}</div>` : ''}
-        ${isRateadoComCarlo(data) ? `<div><span class="k">Realizou</span>${data.medicoRealizou} <b style="color:var(--accent);">(rateio 50/50)</b></div>` : (data.status !== 'autorizada' && data.medicoRealizou) ? `<div><span class="k">Realizou</span>${data.medicoRealizou}</div>` : ''}
+        ${(data.status !== 'autorizada' && data.status !== 'aguardando_agendamento' && data.dataCirurgia) ? `<div><span class="k">Data da cirurgia</span>${fmtDate(data.dataCirurgia)}</div>` : ''}
+        ${isRateadoComCarlo(data) ? `<div><span class="k">Realizou</span>${data.medicoRealizou} <b style="color:var(--accent);">(rateio 50/50)</b></div>` : (data.status !== 'autorizada' && data.status !== 'aguardando_agendamento' && data.medicoRealizou) ? `<div><span class="k">Realizou</span>${data.medicoRealizou}</div>` : ''}
         ${(data.status !== 'autorizado_convenio' && data.pacoteStatus) ? `<div><span class="k">Pacote</span>${data.pacoteStatus === 'autorizado' ? ('Autorizado' + (data.pacote ? ' — ' + data.pacote : '')) : 'Sem pacote'}</div>` : ''}
       </div>
       ${data.status === 'autorizado_convenio' ? `
@@ -2784,15 +2831,26 @@ function renderEntries(entries, containerEl, onChanged){
         `}
       </div>
       ` : ''}
-      ${data.status === 'autorizada' ? `
+      ${data.status === 'aguardando_agendamento' ? `
       <div class="valor-field" style="border-top:1px dashed var(--border); padding-top:10px; margin-top:8px;">
         ${(secretaryDoctors.includes(data.medico) || secretaryName === 'Autorização HUB') ? `
-        <label for="dc-${id}">Data cirurgia agendada para</label>
+        <label for="dc-${id}">Data proposta para a cirurgia</label>
         <input type="date" id="dc-${id}" data-id="${id}" data-field="dataCirurgia" value="${data.dataCirurgia || ''}">
         <label for="mr-${id}">Médico que realizou <span class="opt">(se diferente do solicitante — opcional)</span></label>
         <input type="text" id="mr-${id}" data-id="${id}" data-field="medicoRealizou" placeholder="Nome do médico" value="${data.medicoRealizou || ''}">
+        <div class="opt" style="margin-top:6px;">Aguardando a Autorização HUB confirmar a agenda.</div>
         ` : `
-        <div class="entry-date">Aguardando a secretária do médico marcar a data da cirurgia.</div>
+        <div class="entry-date">Aguardando a secretária do médico propor a data da cirurgia.</div>
+        `}
+      </div>
+      ` : ''}
+      ${data.status === 'autorizada' ? `
+      <div class="valor-field" style="border-top:1px dashed var(--border); padding-top:10px; margin-top:8px;">
+        ${secretaryName === 'Autorização HUB' ? `
+        <label for="dc-${id}">Data confirmada da cirurgia <span class="opt">(editar se precisar remanejar)</span></label>
+        <input type="date" id="dc-${id}" data-id="${id}" data-field="dataCirurgia" value="${data.dataCirurgia || ''}">
+        ` : `
+        <div class="entry-date">Cirurgia confirmada para ${fmtDate(data.dataCirurgia)}.</div>
         `}
       </div>
       ` : ''}
@@ -2831,6 +2889,18 @@ function renderEntries(entries, containerEl, onChanged){
           </label>
           ` : ''}
           <div class="split-hint" id="hint-${id}">${splitHintText(data)}</div>
+        </div>
+        ` : ''}
+        ${data.convenio === 'Particular' ? `
+        <div class="split-row no-print">
+          <label style="display:flex; align-items:center; gap:8px; margin-bottom:8px; font-size:12.5px; font-weight:600; color:var(--ink-muted);">
+            Pagamentos recebidos (Particular)
+            <button type="button" class="btn-small primary" data-add-pagamento="${id}">+ Pagamento</button>
+          </label>
+          <div id="pagamentos-list-${id}">
+            ${(data.pagamentosParticular || []).map((p, idx) => renderPagamentoRow(id, idx, p)).join('')}
+          </div>
+          <div class="split-hint">Total pago: ${brl((data.pagamentosParticular||[]).reduce((s,p)=>s+(Number(p.valor)||0),0))}</div>
         </div>
         ` : ''}
       </div>
@@ -2976,11 +3046,11 @@ function renderEntries(entries, containerEl, onChanged){
         try{
           const changes = { pacoteStatus: e.target.value };
           const entry = entries.find(en => en.id === id);
-          if(entry && e.target.value && canSetStatus('autorizada', entry)){
-            changes.status = 'autorizada';
+          if(entry && e.target.value && canSetStatus('aguardando_agendamento', entry)){
+            changes.status = 'aguardando_agendamento';
           }
           await updateEntry(id, changes);
-          showToast(changes.status ? 'Pacote salvo — cirurgia liberada pra agendar.' : 'Atualizado.');
+          showToast(changes.status ? 'Pacote salvo — aguardando a secretária propor a data.' : 'Atualizado.');
           if(changes.status) onChanged();
         }catch(err){ console.error(err); showToast('Erro ao salvar.'); }
         return;
@@ -2996,12 +3066,14 @@ function renderEntries(entries, containerEl, onChanged){
       const entry = entries.find(en => en.id === id);
       if(entry && !canSetStatus(newStatus, entry)){
         let requiredIdentity;
-        if(newStatus === 'autorizado_convenio'){
+        if(['procedimento_solicitado','procedimento_autorizado','pacote_solicitado','autorizado_convenio'].includes(newStatus)){
           requiredIdentity = (entry.medico === CARLO_NOME)
             ? 'Autorização HUB'
             : `a secretária de ${entry.medico} ou Autorização HUB`;
-        }else if(newStatus === 'autorizada'){
+        }else if(newStatus === 'aguardando_agendamento'){
           requiredIdentity = `a secretária de ${entry.medico} ou Autorização HUB`;
+        }else if(newStatus === 'autorizada'){
+          requiredIdentity = 'Autorização HUB';
         }else if(newStatus === 'concluida'){
           requiredIdentity = CENTRO_CIRURGICO_NOME;
         }else if(newStatus === 'paga'){
@@ -3110,6 +3182,53 @@ function renderEntries(entries, containerEl, onChanged){
         await updateEntry(id, {[field]: e.target.value.trim()});
         showToast('Atualizado.');
       }catch(err){ console.error(err); showToast('Erro ao salvar.'); }
+    });
+  });
+
+  containerEl.querySelectorAll('button[data-add-pagamento]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const id = btn.getAttribute('data-add-pagamento');
+      const entry = entries.find(en => en.id === id);
+      if(!entry) return;
+      const lista = (entry.pagamentosParticular || []).slice();
+      lista.push({ valor: 0, formaPagamento: '', data: '' });
+      try{
+        await updateEntry(id, { pagamentosParticular: lista });
+        onChanged();
+      }catch(err){ console.error(err); showToast('Erro ao adicionar pagamento.'); }
+    });
+  });
+
+  containerEl.querySelectorAll('button[data-remove-pagamento]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const [id, idxStr] = btn.getAttribute('data-remove-pagamento').split(':');
+      const idx = Number(idxStr);
+      const entry = entries.find(en => en.id === id);
+      if(!entry) return;
+      const lista = (entry.pagamentosParticular || []).slice();
+      lista.splice(idx, 1);
+      try{
+        await updateEntry(id, { pagamentosParticular: lista });
+        onChanged();
+      }catch(err){ console.error(err); showToast('Erro ao remover pagamento.'); }
+    });
+  });
+
+  containerEl.querySelectorAll('[data-pagamento-field]').forEach(el=>{
+    el.addEventListener('change', async (e)=>{
+      const id = e.target.getAttribute('data-entry-id');
+      const idx = Number(e.target.getAttribute('data-pagamento-idx'));
+      const field = e.target.getAttribute('data-pagamento-field');
+      const entry = entries.find(en => en.id === id);
+      if(!entry) return;
+      const lista = (entry.pagamentosParticular || []).slice();
+      if(!lista[idx]) return;
+      const val = field === 'valor' ? (Math.round((parseFloat(e.target.value) || 0) * 100) / 100) : e.target.value;
+      lista[idx] = Object.assign({}, lista[idx], { [field]: val });
+      try{
+        await updateEntry(id, { pagamentosParticular: lista });
+        showToast('Atualizado.');
+      }catch(err){ console.error(err); showToast('Erro ao salvar pagamento.'); }
     });
   });
 }
