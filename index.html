@@ -2242,9 +2242,11 @@ function fmtDate(iso){
   return `${d}/${m}/${y}`;
 }
 
-// Só sinaliza validade da guia na etapa "Aguardando cirurgia" -- vermelho se já venceu, amarelo se faltam 7 dias ou menos.
+// Sinaliza validade da guia em qualquer etapa antes de virar "Aguardando Pagamento do Convênio"
+// (ou seja, enquanto a cirurgia ainda não aconteceu/foi faturada) -- vermelho se já venceu, amarelo se faltam 7 dias ou menos.
+const STATUS_SEM_AVISO_VALIDADE = ['concluida', 'paga', 'pagamento_efetuado'];
 function validadeGuiaClass(entry){
-  if(entry.status !== 'autorizada' || !entry.validadeGuia) return '';
+  if(STATUS_SEM_AVISO_VALIDADE.includes(entry.status) || !entry.validadeGuia) return '';
   const hoje = new Date(); hoje.setHours(0,0,0,0);
   const validade = new Date(entry.validadeGuia + 'T00:00:00');
   const diffDias = Math.floor((validade - hoje) / (1000*60*60*24));
