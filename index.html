@@ -584,6 +584,17 @@
     line-height:1.6;
   }
   .agenda-summary b{ color:var(--ink); }
+  .pacote-sugerido-box{
+    font-size:12.5px;
+    color:#4A1D73;
+    background:#F1E6FB;
+    border:1px solid #C9A0E8;
+    border-radius:8px;
+    padding:10px;
+    margin-top:8px;
+    line-height:1.6;
+  }
+  .pacote-sugerido-box b{ color:#3A1258; }
   .field-row{
     display:flex;
     gap:8px;
@@ -2976,7 +2987,7 @@ function renderEntries(entries, containerEl, onChanged){
         ${(data.status !== 'autorizado_convenio' && data.pacoteStatus) ? `<div><span class="k">Pacote</span>${data.pacoteStatus === 'autorizado' ? ('Autorizado' + (data.pacote ? ' — ' + data.pacote : '')) : 'Sem pacote'}</div>` : ''}
       </div>
       ${(data.status === 'procedimento_autorizado' && secretaryName === 'Autorização HUB' && sugerirPacotes(data).length > 0) ? `
-      <div class="agenda-summary" style="margin-top:8px;">
+      <div class="pacote-sugerido-box">
         <b>Pacote identificado pra essa combinação (${data.convenio}):</b>
         ${sugerirPacotes(data).map(p => `
           <div style="margin-top:8px; display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
@@ -2987,7 +2998,7 @@ function renderEntries(entries, containerEl, onChanged){
       </div>
       ` : ''}
       ${(data.status === 'pacote_solicitado' && secretaryName === 'Autorização HUB' && data.pacote) ? `
-      <div class="agenda-summary" style="margin-top:8px;">
+      <div class="pacote-sugerido-box">
         <b>Pacote solicitado ao convênio:</b> código <b>${data.pacote}</b> — aguardando o convênio autorizar.
       </div>
       ` : ''}
@@ -2995,7 +3006,7 @@ function renderEntries(entries, containerEl, onChanged){
       <div class="valor-field" style="border-top:1px dashed var(--border); padding-top:10px; margin-top:8px;">
         ${secretaryName === 'Autorização HUB' ? `
         ${sugerirPacotes(data).length > 0 ? `
-        <div class="agenda-summary" style="margin-bottom:10px;">
+        <div class="pacote-sugerido-box" style="margin-bottom:10px;">
           <b>Pacote identificado pra essa combinação (${data.convenio}):</b><br>
           ${sugerirPacotes(data).map(p => `${p.desc} — código <b>${p.codigo}</b>`).join('<br>')}
         </div>
