@@ -2975,6 +2975,12 @@ function renderEntries(entries, containerEl, onChanged){
         ${isRateadoComCarlo(data) ? `<div><span class="k">Realizou</span>${data.medicoRealizou} <b style="color:var(--accent);">(rateio 50/50)</b></div>` : (data.status !== 'autorizada' && data.status !== 'aguardando_agendamento' && data.medicoRealizou) ? `<div><span class="k">Realizou</span>${data.medicoRealizou}</div>` : ''}
         ${(data.status !== 'autorizado_convenio' && data.pacoteStatus) ? `<div><span class="k">Pacote</span>${data.pacoteStatus === 'autorizado' ? ('Autorizado' + (data.pacote ? ' — ' + data.pacote : '')) : 'Sem pacote'}</div>` : ''}
       </div>
+      ${(['procedimento_autorizado','pacote_solicitado'].includes(data.status) && secretaryName === 'Autorização HUB' && sugerirPacotes(data).length > 0) ? `
+      <div class="agenda-summary" style="margin-top:8px;">
+        <b>Pacote identificado pra essa combinação (${data.convenio}) — solicitar esse ao convênio:</b><br>
+        ${sugerirPacotes(data).map(p => `${p.desc} — código <b>${p.codigo}</b>`).join('<br>')}
+      </div>
+      ` : ''}
       ${data.status === 'autorizado_convenio' ? `
       <div class="valor-field" style="border-top:1px dashed var(--border); padding-top:10px; margin-top:8px;">
         ${secretaryName === 'Autorização HUB' ? `
