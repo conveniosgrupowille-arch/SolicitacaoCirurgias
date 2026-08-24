@@ -1454,10 +1454,9 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let allEntriesCache = null;
 
-const STATUS_STAGES = ['aguardando_autorizacao','procedimento_solicitado','procedimento_autorizado','pacote_solicitado','autorizado_convenio','aguardando_agendamento','autorizada','concluida','paga','pagamento_efetuado'];
+const STATUS_STAGES = ['aguardando_autorizacao','procedimento_autorizado','pacote_solicitado','autorizado_convenio','aguardando_agendamento','autorizada','concluida','paga','pagamento_efetuado'];
 const STATUS_LABELS = {
   aguardando_autorizacao: 'Pendente de autorização',
-  procedimento_solicitado: 'Procedimento Solicitado',
   procedimento_autorizado: 'Procedimento Autorizado',
   pacote_solicitado: 'Pacote Solicitado',
   autorizado_convenio: 'Autorizado Convênio (Procedimento e Pacote)',
@@ -1469,7 +1468,6 @@ const STATUS_LABELS = {
 };
 const STAGE_MENU_LABELS = {
   aguardando_autorizacao: 'Solicitadas',
-  procedimento_solicitado: 'Procedimento Solicitado',
   procedimento_autorizado: 'Procedimento Autorizado',
   pacote_solicitado: 'Pacote Solicitado',
   autorizado_convenio: 'Autorizadas',
@@ -1481,7 +1479,6 @@ const STAGE_MENU_LABELS = {
 };
 const STAGE_BADGE_CLASS = {
   aguardando_autorizacao: 'st-aguardando_autorizacao',
-  procedimento_solicitado: 'st-aguardando_autorizacao',
   procedimento_autorizado: 'st-autorizada',
   pacote_solicitado: 'st-aguardando_autorizacao',
   autorizado_convenio: 'st-autorizada',
@@ -1503,7 +1500,6 @@ function _podeMexerNaAutorizacao(entry){
 
 function canSetStatus(newStatus, entry){
   if(newStatus === 'aguardando_autorizacao') return true;
-  if(newStatus === 'procedimento_solicitado') return _podeMexerNaAutorizacao(entry);
   if(newStatus === 'procedimento_autorizado') return _podeMexerNaAutorizacao(entry);
   if(newStatus === 'pacote_solicitado') return _podeMexerNaAutorizacao(entry);
   if(newStatus === 'autorizado_convenio') return _podeMexerNaAutorizacao(entry);
@@ -3066,7 +3062,7 @@ function renderEntries(entries, containerEl, onChanged){
       const entry = entries.find(en => en.id === id);
       if(entry && !canSetStatus(newStatus, entry)){
         let requiredIdentity;
-        if(['procedimento_solicitado','procedimento_autorizado','pacote_solicitado','autorizado_convenio'].includes(newStatus)){
+        if(['procedimento_autorizado','pacote_solicitado','autorizado_convenio'].includes(newStatus)){
           requiredIdentity = (entry.medico === CARLO_NOME)
             ? 'Autorização HUB'
             : `a secretária de ${entry.medico} ou Autorização HUB`;
