@@ -3690,6 +3690,9 @@ document.getElementById('exportBtn').addEventListener('click', async ()=>{
     if(secretaryDoctors.length){
       entries = entries.filter(e => secretaryDoctors.includes(e.medico));
     }
+    if(activeDoctorFilter !== 'todos'){
+      entries = entries.filter(e => e.medico === activeDoctorFilter);
+    }
     entries = entries.slice().sort((a,b)=> (dataEfetiva(b)).localeCompare(dataEfetiva(a)) || new Date(b.enviadoEm) - new Date(a.enviadoEm));
 
     const isHubViewer = HUB_IDENTITIES.includes(secretaryName);
@@ -3721,7 +3724,7 @@ document.getElementById('exportBtn').addEventListener('click', async ()=>{
         th{background:#123B3A;color:#fff;}
         tr:nth-child(even){background:#F3F6F5;}
       </style></head><body>
-      <h1>Registros de Cirurgias — exportado em ${new Date().toLocaleString('pt-BR')}</h1>
+      <h1>Registros de Cirurgias${activeDoctorFilter !== 'todos' ? ' — ' + activeDoctorFilter : ''} — exportado em ${new Date().toLocaleString('pt-BR')}</h1>
       <table><thead><tr>
         <th>Médico</th><th>Realizou</th><th>Data solicitação</th><th>Data cirurgia</th><th>Paciente</th>
         <th>Procedimento</th><th>Olho</th><th>Convênio</th><th>Observações</th><th>Enviado por</th>${valorCol}<th>Status</th>
@@ -3732,7 +3735,8 @@ document.getElementById('exportBtn').addEventListener('click', async ()=>{
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `registros_cirurgias_${new Date().toISOString().slice(0,10)}.html`;
+    const doctorFileLabel = activeDoctorFilter === 'todos' ? '' : `_${activeDoctorFilter.replace(/\s+/g,'_')}`;
+    a.download = `registros_cirurgias${doctorFileLabel}_${new Date().toISOString().slice(0,10)}.html`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
