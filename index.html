@@ -3928,7 +3928,10 @@ function gerarPdfPendencias(){
     footStyles: { fillColor: [243,246,245], textColor: [18,39,38], fontStyle: 'bold' }
   });
 
-  const filename = `pendencias_${doctor === 'todos' ? 'todos' : doctor.replace(/\s+/g,'_')}_${month || 'geral'}.pdf`;
+  const monthFileLabel = month ? month.split('-').reverse().join('-') : 'geral';
+  const filename = doctor === 'todos'
+    ? `Repasse do mês - Todos os médicos - ${monthFileLabel}.pdf`
+    : `Repasse do mês Dr ${doctor} - ${monthFileLabel}.pdf`;
   doc.save(filename);
 }
 </script>
