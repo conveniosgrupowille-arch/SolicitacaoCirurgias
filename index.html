@@ -3076,8 +3076,12 @@ function renderEntries(entries, containerEl, onChanged){
           <option value="indeferido" ${data.lenteStatus === 'indeferido' ? 'selected' : ''}>Indeferido pelo convênio</option>
           <option value="nao_solicitada" ${data.lenteStatus === 'nao_solicitada' ? 'selected' : ''}>Lente não solicitada</option>
         </select>
+        ${['concluida','paga','pagamento_efetuado'].includes(data.status) ? `
+        <label for="dpc-${id}">Data pagamento convênio <span class="opt">(quando o convênio pagou o hospital)</span></label>
+        <input type="date" id="dpc-${id}" data-id="${id}" data-field="dataPagamentoConvenio" value="${data.dataPagamentoConvenio || ''}">
+        ` : ''}
         ${(data.status === 'paga' || data.status === 'pagamento_efetuado') ? `
-        <label for="dp-${id}">Data de pagamento</label>
+        <label for="dp-${id}">Data repasse ao médico</label>
         <input type="date" id="dp-${id}" data-id="${id}" data-field="dataPagamento" value="${data.dataPagamento || ''}">
         ` : ''}
         <div class="valor-liquido" id="liq-${id}">${liquidoTextoCompleto(data)}</div>
