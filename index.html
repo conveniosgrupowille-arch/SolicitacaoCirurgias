@@ -941,12 +941,23 @@
     font-size:11.5px;
     color:var(--ink-muted);
   }
+  .print-only-summary{ display:none; }
   @media print{
     .no-print, .no-print *{ display:none !important; }
     body{ background:#fff; padding:0; }
     .wrap{ max-width:100%; }
     .card, .entry{ box-shadow:none; border:1px solid #ccc; break-inside:avoid; }
     .doctor-grid{ display:none !important; }
+    .entry-details{ display:none !important; }
+    .print-only-summary{
+      display:block !important;
+      margin-top:6px;
+      padding-top:6px;
+      border-top:1px dashed #ccc;
+      font-size:12.5px;
+      color:#182726;
+    }
+    .print-only-total{ font-weight:700; margin-top:2px; }
   }
 </style>
 </head>
@@ -2973,6 +2984,13 @@ function renderEntries(entries, containerEl, onChanged){
         ${data.glosa ? '<span class="badge" style="background:var(--pending-bg); color:var(--pending); margin-left:6px;">⚠ Glosa/Recusada</span>' : ''}
         <span class="entry-toggle-arrow" id="entry-arrow-${id}">▾</span>
       </div>
+      ${['paga','pagamento_efetuado'].includes(data.status) ? `
+      <div class="print-only-summary">
+        ${(!data.honorarioDireto && (Number(data.valorConvenio)||0) > 0) ? `<div>${data.procedimento || 'Procedimento'}: ${brl((Number(data.valorConvenio)||0) * 0.82)}</div>` : ''}
+        ${(data.medico === IRIGARAY_NOME && !data.lenteStatus && (Number(data.valorLente)||0) > 0) ? `<div>LIO: ${brl(Number(data.valorLente)||0)}</div>` : ''}
+        <div class="print-only-total">Total a repassar: ${brl(calcNet(data))}</div>
+      </div>
+      ` : ''}
       <div class="entry-details" id="entry-details-${id}" style="display:none;">
       <div class="entry-grid">
         <div><span class="k">Paciente</span>${data.paciente || '—'}</div>
