@@ -1718,7 +1718,7 @@ function statusLabelFor(entry){
 
 function calcNet(entry){
   const conv = Number(entry.valorConvenio) || 0;
-  const lente = (entry.medico === IRIGARAY_NOME) ? (Number(entry.valorLente) || 0) : 0;
+  const lente = (entry.medico === IRIGARAY_NOME && !entry.lenteStatus) ? (Number(entry.valorLente) || 0) : 0;
   const honorarioLiquido = entry.honorarioDireto ? 0 : (conv * 0.82);
   let net = honorarioLiquido + lente;
   if(isRateadoComCarlo(entry)) net = net / 2;
@@ -1739,7 +1739,7 @@ function liquidoTextoCompleto(entry){
 }
 
 function splitHintText(entry){
-  const temLio = (Number(entry.valorLente)||0) > 0;
+  const temLio = (Number(entry.valorLente)||0) > 0 && !entry.lenteStatus;
   const honorarioTxt = entry.honorarioDireto
     ? 'Honorário: pago direto em conta —'
     : 'Honorário: aguardando repasse do hospital';
@@ -2985,6 +2985,7 @@ function renderEntries(entries, containerEl, onChanged){
         ${(data.status !== 'autorizada' && data.status !== 'aguardando_agendamento' && data.dataCirurgia) ? `<div><span class="k">Data da cirurgia</span>${fmtDate(data.dataCirurgia)}</div>` : ''}
         ${isRateadoComCarlo(data) ? `<div><span class="k">Realizou</span>${data.medicoRealizou} <b style="color:var(--accent);">(rateio 50/50)</b></div>` : (data.status !== 'autorizada' && data.status !== 'aguardando_agendamento' && data.medicoRealizou) ? `<div><span class="k">Realizou</span>${data.medicoRealizou}</div>` : ''}
         ${(data.status !== 'autorizado_convenio' && data.pacoteStatus) ? `<div><span class="k">Pacote</span>${data.pacoteStatus === 'autorizado' ? ('Autorizado' + (data.pacote ? ' — ' + data.pacote : '')) : 'Sem pacote'}</div>` : ''}
+        ${data.lenteStatus ? `<div><span class="k">Lente</span>${data.lenteStatus === 'indeferido' ? 'Indeferida pelo convênio' : 'Não solicitada'}</div>` : ''}
       </div>
       ${(data.status === 'procedimento_autorizado' && secretaryName === 'Autorização HUB' && sugerirPacotes(data).length > 0) ? `
       <div class="pacote-sugerido-box">
@@ -3066,6 +3067,12 @@ function renderEntries(entries, containerEl, onChanged){
         ` : ''}
         <label for="vl-${id}">Valor lente/LIO (só Dr. Irigaray)</label>
         <input type="number" step="0.01" min="0" id="vl-${id}" data-id="${id}" data-field="valorLente" value="${(Number(data.valorLente)||0).toFixed(2)}">
+        <label for="ls-${id}">Status da lente <span class="opt">(se indeferida ou não solicitada, não conta no repasse)</span></label>
+        <select id="ls-${id}" data-id="${id}" data-field="lenteStatus">
+          <option value="" ${!data.lenteStatus ? 'selected' : ''}>Pendente / normal</option>
+          <option value="indeferido" ${data.lenteStatus === 'indeferido' ? 'selected' : ''}>Indeferido pelo convênio</option>
+          <option value="nao_solicitada" ${data.lenteStatus === 'nao_solicitada' ? 'selected' : ''}>Lente não solicitada</option>
+        </select>
         ${(data.status === 'paga' || data.status === 'pagamento_efetuado') ? `
         <label for="dp-${id}">Data de pagamento</label>
         <input type="date" id="dp-${id}" data-id="${id}" data-field="dataPagamento" value="${data.dataPagamento || ''}">
@@ -3247,6 +3254,17 @@ function renderEntries(entries, containerEl, onChanged){
           await updateEntry(id, changes);
           showToast(changes.status ? 'Pacote salvo — aguardando a secretária propor a data.' : 'Atualizado.');
           if(changes.status) onChanged();
+        }catch(err){ console.error(err); showToast('Erro ao salvar.'); }
+        return;
+      }
+      if(field === 'lenteStatus'){
+        try{
+          const updated = await updateEntry(id, { lenteStatus: e.target.value });
+          const liqEl = document.getElementById('liq-' + id);
+          if(liqEl && updated) liqEl.textContent = liquidoTextoCompleto(updated);
+          const hintEl = document.getElementById('hint-' + id);
+          if(hintEl && updated) hintEl.textContent = splitHintText(updated);
+          showToast('Atualizado.');
         }catch(err){ console.error(err); showToast('Erro ao salvar.'); }
         return;
       }
