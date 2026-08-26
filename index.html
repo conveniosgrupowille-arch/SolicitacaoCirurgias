@@ -1369,6 +1369,9 @@
           <button class="btn-small primary" id="exportBtn">Exportar .html</button>
         </div>
       </div>
+      <div class="fin-filters no-print" id="histDoctorFilterRow" style="display:none;">
+        <select id="histDoctorSelect"></select>
+      </div>
       <div class="filter-row no-print" id="stageFilterRow"></div>
       <div id="historicoList"></div>
     </div>
@@ -3466,6 +3469,29 @@ function renderEntries(entries, containerEl, onChanged){
 }
 
 let activeStage = 'aguardando_autorizacao';
+let activeDoctorFilter = 'todos';
+let histDoctorFilterInitialized = false;
+
+function renderHistDoctorFilter(){
+  const row = document.getElementById('histDoctorFilterRow');
+  const sel = document.getElementById('histDoctorSelect');
+  if(secretaryDoctors.length > 0){
+    row.style.display = 'none';
+    activeDoctorFilter = 'todos';
+    return;
+  }
+  row.style.display = 'flex';
+  if(!histDoctorFilterInitialized){
+    sel.innerHTML = '<option value="todos">Todos os médicos</option>' +
+      doctors.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+    sel.addEventListener('change', ()=>{
+      activeDoctorFilter = sel.value;
+      loadHistorico();
+    });
+    histDoctorFilterInitialized = true;
+  }
+  sel.value = activeDoctorFilter;
+}
 
 function renderStageChips(){
   const row = document.getElementById('stageFilterRow');
@@ -3495,10 +3521,14 @@ async function loadHistorico(){
     histCount.textContent = 'Solicitadas';
     return;
   }
+  renderHistDoctorFilter();
   historicoList.innerHTML = '<div class="empty">Carregando…</div>';
   try{
     let entries = await fetchAllEntries();
     entries = entries.filter(d => secretaryDoctors.length === 0 || secretaryDoctors.includes(d.medico));
+    if(activeDoctorFilter !== 'todos'){
+      entries = entries.filter(d => d.medico === activeDoctorFilter);
+    }
     entries = entries.filter(d => STAGE_MENU_LABELS[d.status] === STAGE_MENU_LABELS[activeStage]);
     entries = entries.slice().sort((a,b)=> (dataEfetiva(b)).localeCompare(dataEfetiva(a)) || new Date(b.enviadoEm) - new Date(a.enviadoEm));
     histCount.textContent = `${STAGE_MENU_LABELS[activeStage]} (${entries.length})`;
