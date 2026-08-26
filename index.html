@@ -941,7 +941,7 @@
     font-size:11.5px;
     color:var(--ink-muted);
   }
-  .print-only-summary{ display:none; }
+  .print-only-summary, .print-only-grandtotal{ display:none; }
   @media print{
     .no-print, .no-print *{ display:none !important; }
     body{ background:#fff; padding:0; }
@@ -958,6 +958,16 @@
       color:#182726;
     }
     .print-only-total{ font-weight:700; margin-top:2px; }
+    .print-only-grandtotal{
+      display:block !important;
+      margin-top:18px;
+      padding-top:10px;
+      border-top:2px solid #182726;
+      font-size:16px;
+      font-weight:700;
+      color:#182726;
+      text-align:right;
+    }
   }
 </style>
 </head>
@@ -1385,6 +1395,7 @@
       </div>
       <div class="filter-row no-print" id="stageFilterRow"></div>
       <div id="historicoList"></div>
+      <div id="histGrandTotal" class="print-only-grandtotal"></div>
     </div>
   </div>
 
@@ -1782,6 +1793,7 @@ const viewHistorico = document.getElementById('view-historico');
 const viewFin = document.getElementById('view-fin');
 const historicoList = document.getElementById('historicoList');
 const histCount = document.getElementById('histCount');
+const histGrandTotal = document.getElementById('histGrandTotal');
 const doctorGrid = document.getElementById('doctorGrid');
 const form = document.getElementById('surgeryForm');
 
@@ -3543,6 +3555,7 @@ async function loadHistorico(){
   if(!secretaryName){
     historicoList.innerHTML = '<div class="empty">Faça login para ver as solicitações.</div>';
     histCount.textContent = 'Solicitadas';
+    histGrandTotal.innerHTML = '';
     return;
   }
   renderHistDoctorFilter();
@@ -3558,7 +3571,14 @@ async function loadHistorico(){
     histCount.textContent = `${STAGE_MENU_LABELS[activeStage]} (${entries.length})`;
     if(entries.length === 0){
       historicoList.innerHTML = `<div class="empty">Nenhum registro em "${STAGE_MENU_LABELS[activeStage]}".</div>`;
+      histGrandTotal.innerHTML = '';
       return;
+    }
+    if(['paga','pagamento_efetuado'].includes(activeStage)){
+      const grandTotal = entries.reduce((s,d)=> s + calcNet(d), 0);
+      histGrandTotal.innerHTML = `Total geral a repassar: ${brl(grandTotal)}`;
+    }else{
+      histGrandTotal.innerHTML = '';
     }
     if(activeStage === 'pagamento_efetuado'){
       renderRepasseEfetuadoList(entries, historicoList);
