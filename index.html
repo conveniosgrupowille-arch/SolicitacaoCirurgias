@@ -3643,18 +3643,41 @@ function renderRepasseEfetuadoList(entries, containerEl){
   containerEl.innerHTML = '';
   const isHubViewer = HUB_IDENTITIES.includes(secretaryName);
   entries.forEach(data=>{
+    const id = data.id;
     const el = document.createElement('div');
     el.className = 'entry readonly';
     el.innerHTML = `
-      <div class="entry-top" style="margin-bottom:0;">
+      <div class="entry-top${isHubViewer ? ' entry-top-clickable' : ''}" ${isHubViewer ? `data-toggle-details="${id}"` : ''} style="margin-bottom:0;">
         <div>
           <div class="entry-medico ${validadeGuiaClass(data)}">${data.paciente || '—'}${validadeGuiaAviso(data) ? ` <span style="font-size:11px; font-weight:600; color:${validadeGuiaClass(data) === 'guia-vencida' ? '#C0392B' : '#B8860B'};">(${validadeGuiaAviso(data)})</span>` : ''}</div>
           <div class="entry-date">${data.convenio || '—'} · Pago em ${fmtDate(data.dataPagamento || dataEfetiva(data))}${isRateadoComCarlo(data) ? ' · metade (rateio Dr. Carlo)' : ''}</div>
         </div>
-        <span class="badge st-pagamento_efetuado">${isHubViewer ? brl(calcNet(data)) : '✓ Pago'}</span>
+        <span class="badge st-pagamento_efetuado">✓ Pago</span>
+        ${isHubViewer ? `<span class="entry-toggle-arrow" id="entry-arrow-${id}">▾</span>` : ''}
       </div>
+      ${isHubViewer ? `
+      <div class="entry-details" id="entry-details-${id}" style="display:none;">
+        <div class="entry-grid">
+          ${(!data.honorarioDireto && (Number(data.valorConvenio)||0) > 0) ? `<div><span class="k">${data.procedimento || 'Procedimento'}</span>${brl((Number(data.valorConvenio)||0) * 0.82)}</div>` : ''}
+          ${(data.medico === IRIGARAY_NOME && !data.lenteStatus && (Number(data.valorLente)||0) > 0) ? `<div><span class="k">LIO</span>${brl(Number(data.valorLente)||0)}</div>` : ''}
+          <div><span class="k">Total repassado</span><b>${brl(calcNet(data))}</b></div>
+        </div>
+      </div>
+      ` : ''}
     `;
     containerEl.appendChild(el);
+  });
+
+  containerEl.querySelectorAll('[data-toggle-details]').forEach(row=>{
+    row.addEventListener('click', ()=>{
+      const id = row.getAttribute('data-toggle-details');
+      const details = document.getElementById('entry-details-' + id);
+      const arrow = document.getElementById('entry-arrow-' + id);
+      if(!details) return;
+      const isOpen = details.style.display !== 'none';
+      details.style.display = isOpen ? 'none' : 'block';
+      if(arrow) arrow.textContent = isOpen ? '▾' : '▴';
+    });
   });
 }
 
