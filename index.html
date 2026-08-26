@@ -1729,6 +1729,8 @@ function calcNet(entry){
 }
 
 function calcImposto(entry){
+  // Honorário pago direto pelo convênio nunca passa pela conta do hospital -- não há imposto a calcular aqui.
+  if(entry.honorarioDireto) return 0;
   const conv = Number(entry.valorConvenio) || 0;
   return conv * 0.18;
 }
