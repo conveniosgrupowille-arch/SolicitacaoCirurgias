@@ -985,7 +985,7 @@
     <button id="tab-historico-btn" class="active">Solicitadas</button>
     <button id="tab-autorizacao-btn">Autorização</button>
     <button id="tab-faturamento-btn">Faturamento</button>
-    <button id="tab-fin-btn">Financeiro</button>
+    <button id="tab-fin-btn">Fluxo de Receitas</button>
   </nav>
 
   <div id="view-home">
@@ -1820,9 +1820,9 @@ function initialsOf(name){
 let secretaryDoctors = [];
 let secretaryPassword = null;
 
-const HUB_IDENTITIES = ['Autorização HUB', 'Faturamento HUB', 'Financeiro HUB'];
+const HUB_IDENTITIES = ['Autorização HUB', 'Faturamento HUB', 'Financeiro HUB', 'Andreia', 'Artur', 'Carolline'];
 const CENTRO_CIRURGICO_NOME = 'Secretaria Centro Cirúrgico';
-const RESTRITOS_DO_FORMULARIO = [CENTRO_CIRURGICO_NOME, 'Faturamento HUB', 'Financeiro HUB'];
+const RESTRITOS_DO_FORMULARIO = [CENTRO_CIRURGICO_NOME, 'Faturamento HUB', 'Financeiro HUB', 'Andreia', 'Artur', 'Carolline'];
 
 // Confere identidade+senha direto no banco -- a senha nunca fica salva em texto no código da página.
 async function verifyLogin(identity, password){
