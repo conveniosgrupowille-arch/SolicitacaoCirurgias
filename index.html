@@ -3351,7 +3351,7 @@ function renderEntries(entries, containerEl, onChanged){
         ${data.usaLenteConvenio === 'nao' ? `<div><span class="k">Lente</span>Particular${data.lenteParticularValor ? ' — R$ ' + Number(data.lenteParticularValor).toFixed(2) : ''}</div>` : ''}
         ${data.lioTorica ? `<div><span class="k">LIO tórica</span>${data.lioTorica === 'sim' ? 'Sim' : 'Não'}</div>` : ''}
         ${data.lioVemDe ? `<div><span class="k">LIO virá do</span>${data.lioVemDe}</div>` : ''}
-        ${data.cobrarLioConvenio ? `<div><span class="k">Cobrar LIO do convênio</span>${data.cobrarLioConvenio === 'sim' ? 'Sim' : 'Não'}</div>` : ''}
+        ${data.cobrarLioConvenio ? `<div${data.cobrarLioConvenio === 'sim' ? ' style="background:#fff3cd; padding:4px 8px; border-radius:6px; margin:-4px -8px;"' : ''}><span class="k">Cobrar LIO do convênio</span>${data.cobrarLioConvenio === 'sim' ? '<b>Sim — não esquecer de pedir na autorização</b>' : 'Não'}</div>` : ''}
         ${data.crmMedico ? `<div><span class="k">CRM do médico</span>${data.crmMedico}</div>` : ''}
         ${data.dataNascimento ? `<div><span class="k">Data de nascimento</span>${fmtDate(data.dataNascimento)}</div>` : ''}
         ${data.cpfPaciente ? `<div><span class="k">CPF</span>${data.cpfPaciente}</div>` : ''}
