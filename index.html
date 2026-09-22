@@ -35,22 +35,47 @@
     color:var(--ink);
     font-family:'Inter',system-ui,sans-serif;
     min-height:100vh;
-    padding:32px 16px 64px;
+    padding:0;
   }
-  .wrap{max-width:640px;margin:0 auto;}
   html{overflow-x:hidden;}
-  /* Tela de histórico foge da largura de 640px do resto do app (pedido do
-     usuário: menu de status na lateral + tela ocupando 100% do espaço) -
-     "escapa" do .wrap pai usando left:50%+translateX, independente da
-     largura do ancestral. */
-  #view-historico{
-    position:relative;
-    left:50%;
-    transform:translateX(-50%);
-    width:100vw;
-    max-width:1300px;
+  .wrap{width:100%;}
+  /* Layout em sidebar (pedido do usuário: menu principal na lateral esquerda
+     "como um sistema") - sidebar fixa + conteúdo com margin-left, mesmo
+     padrão já usado no Portal Fluxo Financeiro (flexbox tinha bug real de
+     não encolher direito com conteúdo largo aninhado - ver nota lá). Cada
+     view define sua própria largura máxima e se centraliza dentro do
+     app-main, em vez de um .wrap único global de 640px pra tudo. */
+  .app-sidebar{
+    position:fixed;
+    top:0; left:0; bottom:0;
+    width:220px;
+    background:var(--surface);
+    border-right:1px solid var(--border);
+    padding:24px 18px;
+    overflow-y:auto;
     box-sizing:border-box;
-    padding:0 16px;
+    z-index:10;
+  }
+  .app-main{
+    margin-left:220px;
+    padding:32px 24px 64px;
+    box-sizing:border-box;
+  }
+  #view-home, #view-form, #view-fin{ max-width:640px; margin:0 auto; }
+  #view-historico{
+    max-width:1300px;
+    margin:0 auto;
+    box-sizing:border-box;
+  }
+  @media (max-width:860px){
+    .app-sidebar{
+      position:relative;
+      width:100%;
+      height:auto;
+      border-right:none;
+      border-bottom:1px solid var(--border);
+    }
+    .app-main{ margin-left:0; padding:20px 16px 48px; }
   }
   .historico-layout{
     display:flex;
@@ -80,7 +105,7 @@
     .historico-sidebar .filter-chip{ width:auto; }
   }
 
-  header{display:flex;align-items:center;gap:16px;margin-bottom:28px;}
+  header{display:flex;align-items:center;gap:12px;margin-bottom:28px;}
   .iris{
     width:44px;height:44px;flex:none;border-radius:50%;
     background:
@@ -100,26 +125,28 @@
 
   nav.tabs{
     display:flex;
+    flex-direction:column;
     flex-wrap:nowrap;
     gap:4px;
-    background:var(--surface);
-    border:1px solid var(--border);
-    border-radius:999px;
-    padding:4px;
-    margin-bottom:24px;
-    box-shadow:var(--shadow);
+    background:transparent;
+    border:none;
+    border-radius:0;
+    padding:0;
+    margin-bottom:0;
+    box-shadow:none;
   }
   nav.tabs button{
-    flex:1;
-    min-width:0;
+    flex:none;
+    width:100%;
+    text-align:left;
     border:none;
     background:transparent;
-    padding:10px 4px;
+    padding:10px 14px;
     font-family:'Inter',sans-serif;
     font-weight:600;
-    font-size:11px;
+    font-size:13px;
     color:var(--ink-muted);
-    border-radius:999px;
+    border-radius:10px;
     cursor:pointer;
     transition:background .15s, color .15s;
     white-space:nowrap;
@@ -129,6 +156,10 @@
   nav.tabs button.active{
     background:var(--primary);
     color:#fff;
+  }
+  @media (max-width:860px){
+    nav.tabs{ flex-direction:row; flex-wrap:wrap; }
+    nav.tabs button{ width:auto; flex:1; min-width:100px; text-align:center; }
   }
 
   .card{
@@ -989,6 +1020,9 @@
     .no-print, .no-print *{ display:none !important; }
     body{ background:#fff; padding:0; }
     .wrap{ max-width:100%; }
+    .app-sidebar{ position:static; width:auto; height:auto; border:none; padding:0; margin-bottom:16px; }
+    .app-main{ margin-left:0; padding:0; }
+    #view-home, #view-form, #view-fin, #view-historico{ max-width:100%; }
     .card, .entry{ box-shadow:none; border:1px solid #ccc; break-inside:avoid; }
     .doctor-grid{ display:none !important; }
     .entry-details{ display:none !important; }
@@ -1015,7 +1049,7 @@
 </style>
 </head>
 <body>
-<div class="wrap">
+<aside class="app-sidebar">
   <header>
     <div class="iris"></div>
     <div>
@@ -1030,7 +1064,9 @@
     <button id="tab-faturamento-btn">Faturamento</button>
     <button id="tab-fin-btn">Fluxo de Receitas</button>
   </nav>
-
+</aside>
+<div class="app-main">
+<div class="wrap">
   <div id="view-home">
     <div id="loginGate-home" class="no-print"></div>
     <div id="identityStatus-home" class="no-print"></div>
@@ -1666,6 +1702,7 @@
   </div>
 
   <footer class="no-print">As respostas ficam salvas na nuvem deste link — compartilhe o mesmo link com as secretárias.</footer>
+</div>
 </div>
 
 <div class="toast no-print" id="toast">Registro enviado com sucesso.</div>
