@@ -1618,24 +1618,34 @@
 
   <div id="view-historico" style="display:none;">
     <div id="loginGate-historico" class="no-print"></div>
-    <div id="identityStatus-historico" class="no-print"></div>
     <div id="content-historico">
-      <div class="respostas-head">
-        <h2 id="histCount">Solicitadas</h2>
-        <div class="actions no-print">
-          <button class="btn-small" id="refreshHistBtn">Atualizar</button>
-          <button class="btn-small" id="printHistBtn">Imprimir lista</button>
-          <button class="btn-small primary" id="exportBtn">Exportar .html</button>
+      <div id="historicoStickyHead" class="no-print">
+        <div id="identityStatus-historico"></div>
+        <div class="respostas-head">
+          <h2 id="histCount">Solicitadas</h2>
+          <div class="actions no-print">
+            <button class="btn-small" id="refreshHistBtn">Atualizar</button>
+            <button class="btn-small" id="printHistBtn">Imprimir lista</button>
+            <button class="btn-small primary" id="exportBtn">Exportar .html</button>
+          </div>
+        </div>
+        <div class="fin-filters no-print" id="histDoctorFilterRow">
+            <div class="field" style="margin-bottom:0; flex:1; min-width:140px;">
+              <label for="stageSelect">Status</label>
+              <select id="stageSelect"></select>
+            </div>
+            <div class="field" style="margin-bottom:0; flex:1; min-width:140px;">
+              <label for="histConvenioSelect">Convênio</label>
+              <select id="histConvenioSelect"></select>
+            </div>
+            <div class="field" style="margin-bottom:0; flex:1; min-width:140px;" id="histDoctorFieldWrap">
+              <label for="histDoctorSelect">Médicos</label>
+              <select id="histDoctorSelect" style="display:none;"></select>
+            </div>
         </div>
       </div>
-      <div class="historico-main">
-          <div class="fin-filters no-print" id="histDoctorFilterRow">
-            <select id="stageSelect"></select>
-            <select id="histDoctorSelect" style="display:none;"></select>
-          </div>
-          <div id="historicoList"></div>
-          <div id="histGrandTotal" class="print-only-grandtotal"></div>
-      </div>
+      <div id="historicoList"></div>
+      <div id="histGrandTotal" class="print-only-grandtotal"></div>
     </div>
   </div>
 
@@ -2139,25 +2149,27 @@ function updateNavForIdentity(){
   nav.style.display = (secretaryName && secretaryName !== CENTRO_CIRURGICO_NOME) ? 'flex' : 'none';
 }
 
-function loginOptionsHtml(){
+function loginOptionsHtml(excludeDoctors){
   const doctorOptions = doctors.map(d=>`<option value="${d.name}">${d.name}</option>`).join('');
   const hubOptions = HUB_IDENTITIES.slice().sort((a,b)=> a.localeCompare(b, 'pt-BR'))
     .map(h=>`<option value="${h}">${h}</option>`).join('');
+  const medicosGroup = excludeDoctors ? '' : `<optgroup label="Médicos">${doctorOptions}</optgroup>`;
   return `<option value="" disabled selected>Selecione…</option>
-    <optgroup label="Médicos">${doctorOptions}</optgroup>
+    ${medicosGroup}
     <optgroup label="Centro Cirúrgico">
       <option value="${CENTRO_CIRURGICO_NOME}">${CENTRO_CIRURGICO_NOME}</option>
     </optgroup>
     <optgroup label="HUB (vê todos)">${hubOptions}</optgroup>`;
 }
 
-function renderLoginGate(containerId, onSuccess){
+function renderLoginGate(containerId, onSuccess, opts){
+  const excludeDoctors = opts && opts.excludeDoctors;
   const el = document.getElementById(containerId);
   if(!el) return;
   el.style.display = 'block';
   el.innerHTML = `
     <form class="identity-form" id="loginForm-${containerId}" onsubmit="return false;">
-      <select id="loginSelect-${containerId}" required>${loginOptionsHtml()}</select>
+      <select id="loginSelect-${containerId}" required>${loginOptionsHtml(excludeDoctors)}</select>
       <input type="password" id="loginPassword-${containerId}" placeholder="Senha">
       <button type="submit">Entrar</button>
     </form>
@@ -2483,7 +2495,7 @@ function openMedicosTab(){
         renderIdentityStatus('identityStatus-home', openMedicosTab);
         updateNavForIdentity();
         renderDoctorGrid();
-      });
+      }, {excludeDoctors: true});
     };
   }
 }
@@ -3853,16 +3865,37 @@ function renderEntries(entries, containerEl, onChanged){
 
 let activeStage = 'aguardando_autorizacao';
 let activeDoctorFilter = 'todos';
+let activeConvenioFilter = 'todos';
 let histDoctorFilterInitialized = false;
+let histConvenioFilterInitialized = false;
+
+function renderHistConvenioFilter(entries){
+  const sel = document.getElementById('histConvenioSelect');
+  const convenios = [...new Set(entries.map(e => (e.convenio || '').trim()).filter(Boolean))]
+    .sort((a,b)=> a.localeCompare(b, 'pt-BR'));
+  sel.innerHTML = '<option value="todos">Todos os convênios</option>' +
+    convenios.map(c => `<option value="${c}">${c}</option>`).join('');
+  sel.value = convenios.includes(activeConvenioFilter) ? activeConvenioFilter : 'todos';
+  if(!histConvenioFilterInitialized){
+    sel.addEventListener('change', ()=>{
+      activeConvenioFilter = sel.value;
+      loadHistorico();
+    });
+    histConvenioFilterInitialized = true;
+  }
+}
 
 function renderHistDoctorFilter(){
   const sel = document.getElementById('histDoctorSelect');
+  const wrap = document.getElementById('histDoctorFieldWrap');
   if(secretaryDoctors.length > 0){
     sel.style.display = 'none';
+    if(wrap) wrap.style.display = 'none';
     activeDoctorFilter = 'todos';
     return;
   }
   sel.style.display = '';
+  if(wrap) wrap.style.display = '';
   if(!histDoctorFilterInitialized){
     sel.innerHTML = '<option value="todos">Todos os médicos</option>' +
       doctors.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
@@ -3918,8 +3951,12 @@ async function loadHistorico(){
   try{
     let entries = await fetchAllEntries();
     entries = entries.filter(d => secretaryDoctors.length === 0 || secretaryDoctors.includes(d.medico));
+    renderHistConvenioFilter(entries);
     if(activeDoctorFilter !== 'todos'){
       entries = entries.filter(d => d.medico === activeDoctorFilter);
+    }
+    if(activeConvenioFilter !== 'todos'){
+      entries = entries.filter(d => (d.convenio || '').trim() === activeConvenioFilter);
     }
     entries = entries.filter(d => STAGE_MENU_LABELS[d.status] === STAGE_MENU_LABELS[activeStage]);
     entries = entries.slice().sort((a,b)=> (dataEfetiva(b)).localeCompare(dataEfetiva(a)) || new Date(b.enviadoEm) - new Date(a.enviadoEm));
