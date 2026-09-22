@@ -1099,19 +1099,20 @@
             <label for="convenio">Convênio<span class="required-mark">*</span></label>
             <input type="text" id="convenio" list="convenioList" placeholder="Nome do convênio" autocomplete="off">
             <datalist id="convenioList">
-              <option>Unimed</option>
-              <option>SC Saude</option>
-              <option>Saúde Bradesco</option>
-              <option>Levmed</option>
-              <option>Mediservice</option>
-              <option>Nossa Saude</option>
-              <option>Saude Caixa</option>
-              <option>Postal Saude</option>
-              <option>Select</option>
-              <option>Sind.Dos Trans</option>
-              <option>Social</option>
-              <option>Particular</option>
-              <option>Cortesia</option>
+              <option>UNIMED</option>
+              <option>SC SAÚDE</option>
+              <option>SAÚDE BRADESCO</option>
+              <option>BRADESCO</option>
+              <option>LEVMED</option>
+              <option>MEDSERVICE</option>
+              <option>NOSSA SAÚDE</option>
+              <option>SAÚDE CAIXA</option>
+              <option>POSTAL SAÚDE</option>
+              <option>SELECT</option>
+              <option>SIND.DOS TRANS</option>
+              <option>SOCIAL</option>
+              <option>PARTICULAR</option>
+              <option>CORTESIA</option>
             </datalist>
           </div>
           <div style="flex:1; min-width:0;">
@@ -3483,7 +3484,7 @@ function renderEntries(entries, containerEl, onChanged){
           <div class="split-hint" id="hint-${id}">${splitHintText(data)}</div>
         </div>
         ` : ''}
-        ${data.convenio === 'Particular' ? `
+        ${(data.convenio || '').trim().toUpperCase() === 'PARTICULAR' ? `
         <div class="split-row no-print">
           <label style="display:flex; align-items:center; gap:8px; margin-bottom:8px; font-size:12.5px; font-weight:600; color:var(--ink-muted);">
             Pagamentos recebidos (Particular)
