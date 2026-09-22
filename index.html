@@ -1051,11 +1051,76 @@
             <label for="carteirinha">Carteirinha do paciente <span class="opt">(opcional)</span></label>
             <input type="text" id="carteirinha" placeholder="Nº da carteirinha">
           </div>
+          <div style="flex:0.7; min-width:0;">
+            <label for="crmMedico">CRM do médico <span class="opt">(opcional)</span></label>
+            <input type="text" id="crmMedico" placeholder="CRM">
+          </div>
         </div>
 
         <div class="field">
           <label for="paciente">Nome do paciente<span class="required-mark">*</span></label>
           <input type="text" id="paciente" placeholder="Nome completo">
+        </div>
+
+        <div class="field" style="display:flex; gap:10px; flex-wrap:wrap;">
+          <div style="flex:1; min-width:140px;">
+            <label for="dataNascimento">Data de nascimento <span class="opt">(opcional)</span></label>
+            <input type="date" id="dataNascimento">
+          </div>
+          <div style="flex:1; min-width:140px;">
+            <label for="cpfPaciente">CPF <span class="opt">(opcional)</span></label>
+            <input type="text" id="cpfPaciente" placeholder="000.000.000-00">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="nomeMae">Nome da mãe <span class="opt">(opcional)</span></label>
+          <input type="text" id="nomeMae" placeholder="Nome completo">
+        </div>
+
+        <div class="field" style="display:flex; gap:10px; flex-wrap:wrap;">
+          <div style="flex:1; min-width:140px;">
+            <label for="telefonePaciente">Telefone <span class="opt">(opcional)</span></label>
+            <input type="text" id="telefonePaciente" placeholder="(00) 00000-0000">
+          </div>
+          <div style="flex:1.3; min-width:180px;">
+            <label for="emailPaciente">E-mail do paciente <span class="opt">(opcional)</span></label>
+            <input type="email" id="emailPaciente" placeholder="paciente@email.com">
+          </div>
+        </div>
+
+        <div style="font-weight:700; margin:16px 0 4px; color:var(--ink-muted); font-size:13px;">Endereço <span class="opt" style="font-weight:400;">(opcional)</span></div>
+        <div class="field" style="display:flex; gap:10px; flex-wrap:wrap;">
+          <div style="flex:2; min-width:160px;">
+            <label for="enderecoRua">Rua</label>
+            <input type="text" id="enderecoRua" placeholder="Nome da rua">
+          </div>
+          <div style="flex:0.6; min-width:80px;">
+            <label for="enderecoNumero">Número</label>
+            <input type="text" id="enderecoNumero" placeholder="Nº">
+          </div>
+          <div style="flex:1; min-width:120px;">
+            <label for="enderecoComplemento">Complemento</label>
+            <input type="text" id="enderecoComplemento" placeholder="Apto, bloco…">
+          </div>
+        </div>
+        <div class="field" style="display:flex; gap:10px; flex-wrap:wrap;">
+          <div style="flex:1; min-width:120px;">
+            <label for="enderecoBairro">Bairro</label>
+            <input type="text" id="enderecoBairro">
+          </div>
+          <div style="flex:1.2; min-width:130px;">
+            <label for="enderecoCidade">Cidade</label>
+            <input type="text" id="enderecoCidade">
+          </div>
+          <div style="flex:0.5; min-width:60px;">
+            <label for="enderecoUf">UF</label>
+            <input type="text" id="enderecoUf" maxlength="2" placeholder="SC" style="text-transform:uppercase;">
+          </div>
+          <div style="flex:0.8; min-width:100px;">
+            <label for="enderecoCep">CEP</label>
+            <input type="text" id="enderecoCep" placeholder="00000-000">
+          </div>
         </div>
 
         <div class="field">
@@ -1318,6 +1383,11 @@
           <input type="text" id="procedimentoOutro" placeholder="Digite o procedimento" style="margin-top:8px; display:none;">
         </div>
 
+        <div class="field">
+          <label for="procedimentoSecundario">Procedimento secundário <span class="opt">(se houver)</span></label>
+          <input type="text" id="procedimentoSecundario" placeholder="Nome do procedimento secundário">
+        </div>
+
         <div class="field" style="display:flex; gap:10px;">
           <div style="flex:1; min-width:0;">
             <label for="olho">Olho<span class="required-mark">*</span></label>
@@ -1329,6 +1399,13 @@
             </select>
           </div>
           <div style="flex:1; min-width:0;">
+            <label for="tempoCirurgicoPrevisto">Tempo cirúrgico previsto <span class="opt">(opcional)</span></label>
+            <input type="text" id="tempoCirurgicoPrevisto" placeholder="ex: 30 min">
+          </div>
+        </div>
+
+        <div class="field" style="display:flex; gap:10px;">
+          <div style="flex:1; min-width:0;">
             <label for="comAnestesista">Com anestesista?<span class="required-mark">*</span></label>
             <select id="comAnestesista">
               <option value="" disabled selected>Selecione…</option>
@@ -1336,6 +1413,41 @@
               <option value="nao">Não</option>
             </select>
           </div>
+          <div style="flex:1; min-width:0;">
+            <label for="tecnicaAnestesica">Técnica anestésica <span class="opt">(opcional)</span></label>
+            <input type="text" id="tecnicaAnestesica" list="tecnicaAnestesicaList" placeholder="Selecione ou digite…" autocomplete="off">
+            <datalist id="tecnicaAnestesicaList">
+              <option>Tópica</option>
+              <option>Local</option>
+              <option>Sedação</option>
+              <option>Geral</option>
+              <option>Bloqueio peribulbar</option>
+              <option>Bloqueio retrobulbar</option>
+            </datalist>
+          </div>
+        </div>
+
+        <div class="field" style="display:flex; gap:10px;">
+          <div style="flex:1; min-width:0;">
+            <label for="equipeAnestesiaSaj">Procedimento com equipe de anestesia SAJ? <span class="opt">(opcional)</span></label>
+            <select id="equipeAnestesiaSaj">
+              <option value="" selected>Selecione…</option>
+              <option value="sim">Sim</option>
+              <option value="nao">Não</option>
+            </select>
+          </div>
+          <div style="flex:1; min-width:0;">
+            <label for="materialEspecial">Necessário material/instrumental especial? <span class="opt">(opcional)</span></label>
+            <select id="materialEspecial">
+              <option value="" selected>Selecione…</option>
+              <option value="sim">Sim</option>
+              <option value="nao">Não</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="materialEspecialDetalhe">Qual material/instrumental? <span class="opt">(preencher se a resposta acima for Sim)</span></label>
+          <input type="text" id="materialEspecialDetalhe" placeholder="Descreva o material/instrumental necessário">
         </div>
 
         <div class="field">
@@ -1355,6 +1467,65 @@
         <div class="field" id="lenteParticularField" style="display:none;">
           <label for="lenteParticularValor">Particular <span class="opt">(valor da lente que será cobrado)</span></label>
           <input type="number" step="0.01" min="0" id="lenteParticularValor" placeholder="Valor em R$">
+        </div>
+
+        <div class="field" style="display:flex; gap:10px;">
+          <div style="flex:1; min-width:0;">
+            <label for="lioTorica">LIO tórica? <span class="opt">(opcional)</span></label>
+            <select id="lioTorica">
+              <option value="" selected>Selecione…</option>
+              <option value="sim">Sim</option>
+              <option value="nao">Não</option>
+            </select>
+          </div>
+          <div style="flex:1; min-width:0;">
+            <label for="cobrarLioConvenio">Cobrar a LIO do convênio? <span class="opt">(opcional)</span></label>
+            <select id="cobrarLioConvenio">
+              <option value="" selected>Selecione…</option>
+              <option value="sim">Sim</option>
+              <option value="nao">Não</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="lioVemDe">LIO virá do <span class="opt">(convênio, HUB, ou escreva de onde — em caso de encomenda pelo HUB, escreva as informações aqui)</span></label>
+          <input type="text" id="lioVemDe" list="lioVemDeList" placeholder="Selecione ou digite…" autocomplete="off">
+          <datalist id="lioVemDeList">
+            <option>Convênio</option>
+            <option>HUB</option>
+          </datalist>
+        </div>
+
+        <div style="font-weight:700; margin:16px 0 4px; color:var(--ink-muted); font-size:13px;">Pré-operatório <span class="opt" style="font-weight:400;">(opcional)</span></div>
+        <div class="field" style="display:flex; gap:10px;">
+          <div style="flex:1; min-width:0;">
+            <label for="examesPreOp">Realizados exames pré-operatórios?</label>
+            <select id="examesPreOp">
+              <option value="" selected>Selecione…</option>
+              <option value="sim">Sim</option>
+              <option value="nao">Não</option>
+            </select>
+          </div>
+          <div style="flex:1; min-width:0;">
+            <label for="alergiaLatex">Possui alergia a látex?</label>
+            <select id="alergiaLatex">
+              <option value="" selected>Selecione…</option>
+              <option value="sim">Sim</option>
+              <option value="nao">Não</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="alergiaOutros">Possui alguma alergia a medicamento, alimento ou produto? Qual? <span class="opt">(deixe em branco se não)</span></label>
+          <input type="text" id="alergiaOutros" placeholder="Qual?">
+        </div>
+        <div class="field">
+          <label for="necessidadeEspecial">Possui alguma necessidade de atendimento especial? Qual? <span class="opt">(deixe em branco se não)</span></label>
+          <input type="text" id="necessidadeEspecial" placeholder="Qual?">
+        </div>
+        <div class="field">
+          <label for="preferenciaHorario">Preferência de horário <span class="opt">(opcional)</span></label>
+          <input type="text" id="preferenciaHorario" placeholder="ex: Manhã, Tarde, horário específico…">
         </div>
 
         <div class="field">
@@ -2110,6 +2281,33 @@ async function openFormForEdit(entry){
   document.getElementById('validadeGuia').value = entry.validadeGuia || '';
   document.getElementById('paciente').value = entry.paciente || '';
   document.getElementById('carteirinha').value = entry.carteirinha || '';
+  document.getElementById('crmMedico').value = entry.crmMedico || '';
+  document.getElementById('dataNascimento').value = entry.dataNascimento || '';
+  document.getElementById('cpfPaciente').value = entry.cpfPaciente || '';
+  document.getElementById('nomeMae').value = entry.nomeMae || '';
+  document.getElementById('telefonePaciente').value = entry.telefonePaciente || '';
+  document.getElementById('emailPaciente').value = entry.emailPaciente || '';
+  document.getElementById('enderecoRua').value = entry.enderecoRua || '';
+  document.getElementById('enderecoNumero').value = entry.enderecoNumero || '';
+  document.getElementById('enderecoComplemento').value = entry.enderecoComplemento || '';
+  document.getElementById('enderecoBairro').value = entry.enderecoBairro || '';
+  document.getElementById('enderecoCidade').value = entry.enderecoCidade || '';
+  document.getElementById('enderecoUf').value = entry.enderecoUf || '';
+  document.getElementById('enderecoCep').value = entry.enderecoCep || '';
+  document.getElementById('procedimentoSecundario').value = entry.procedimentoSecundario || '';
+  document.getElementById('tempoCirurgicoPrevisto').value = entry.tempoCirurgicoPrevisto || '';
+  document.getElementById('tecnicaAnestesica').value = entry.tecnicaAnestesica || '';
+  document.getElementById('equipeAnestesiaSaj').value = entry.equipeAnestesiaSaj || '';
+  document.getElementById('materialEspecial').value = entry.materialEspecial || '';
+  document.getElementById('materialEspecialDetalhe').value = entry.materialEspecialDetalhe || '';
+  document.getElementById('lioTorica').value = entry.lioTorica || '';
+  document.getElementById('cobrarLioConvenio').value = entry.cobrarLioConvenio || '';
+  document.getElementById('lioVemDe').value = entry.lioVemDe || '';
+  document.getElementById('examesPreOp').value = entry.examesPreOp || '';
+  document.getElementById('alergiaLatex').value = entry.alergiaLatex || '';
+  document.getElementById('alergiaOutros').value = entry.alergiaOutros || '';
+  document.getElementById('necessidadeEspecial').value = entry.necessidadeEspecial || '';
+  document.getElementById('preferenciaHorario').value = entry.preferenciaHorario || '';
   document.getElementById('olho').value = entry.olho || '';
   document.getElementById('comAnestesista').value = entry.comAnestesista || '';
   document.getElementById('convenio').value = entry.convenio || '';
@@ -2750,13 +2948,40 @@ document.getElementById('formSubmitBtn').addEventListener('click', async (e)=>{
       validadeGuia: document.getElementById('validadeGuia').value,
       paciente: pacienteVal,
       carteirinha: document.getElementById('carteirinha').value.trim(),
+      crmMedico: document.getElementById('crmMedico').value.trim(),
+      dataNascimento: document.getElementById('dataNascimento').value,
+      cpfPaciente: document.getElementById('cpfPaciente').value.trim(),
+      nomeMae: document.getElementById('nomeMae').value.trim(),
+      telefonePaciente: document.getElementById('telefonePaciente').value.trim(),
+      emailPaciente: document.getElementById('emailPaciente').value.trim(),
+      enderecoRua: document.getElementById('enderecoRua').value.trim(),
+      enderecoNumero: document.getElementById('enderecoNumero').value.trim(),
+      enderecoComplemento: document.getElementById('enderecoComplemento').value.trim(),
+      enderecoBairro: document.getElementById('enderecoBairro').value.trim(),
+      enderecoCidade: document.getElementById('enderecoCidade').value.trim(),
+      enderecoUf: document.getElementById('enderecoUf').value.trim(),
+      enderecoCep: document.getElementById('enderecoCep').value.trim(),
       procedimento: procedimentoVal,
+      procedimentoSecundario: document.getElementById('procedimentoSecundario').value.trim(),
+      tempoCirurgicoPrevisto: document.getElementById('tempoCirurgicoPrevisto').value.trim(),
       olho: olhoVal,
       comAnestesista: comAnestesistaVal,
+      tecnicaAnestesica: document.getElementById('tecnicaAnestesica').value.trim(),
+      equipeAnestesiaSaj: document.getElementById('equipeAnestesiaSaj').value,
+      materialEspecial: document.getElementById('materialEspecial').value,
+      materialEspecialDetalhe: document.getElementById('materialEspecialDetalhe').value.trim(),
       convenio: convenioVal,
       usaLenteConvenio: usaLenteVal,
       solicitacaoLente: solicitacaoLenteVal,
       lenteParticularValor: lenteParticularValorVal,
+      lioTorica: document.getElementById('lioTorica').value,
+      cobrarLioConvenio: document.getElementById('cobrarLioConvenio').value,
+      lioVemDe: document.getElementById('lioVemDe').value.trim(),
+      examesPreOp: document.getElementById('examesPreOp').value,
+      alergiaLatex: document.getElementById('alergiaLatex').value,
+      alergiaOutros: document.getElementById('alergiaOutros').value.trim(),
+      necessidadeEspecial: document.getElementById('necessidadeEspecial').value.trim(),
+      preferenciaHorario: document.getElementById('preferenciaHorario').value.trim(),
       observacoes: obsBase
     };
 
@@ -3033,6 +3258,26 @@ function renderEntries(entries, containerEl, onChanged){
         <div><span class="k">Convênio</span>${data.convenio || '—'}</div>
         ${data.usaLenteConvenio === 'sim' ? `<div><span class="k">Lente do convênio</span>Sim${data.solicitacaoLente ? ' — ' + data.solicitacaoLente : ''}</div>` : ''}
         ${data.usaLenteConvenio === 'nao' ? `<div><span class="k">Lente</span>Particular${data.lenteParticularValor ? ' — R$ ' + Number(data.lenteParticularValor).toFixed(2) : ''}</div>` : ''}
+        ${data.lioTorica ? `<div><span class="k">LIO tórica</span>${data.lioTorica === 'sim' ? 'Sim' : 'Não'}</div>` : ''}
+        ${data.lioVemDe ? `<div><span class="k">LIO virá do</span>${data.lioVemDe}</div>` : ''}
+        ${data.cobrarLioConvenio ? `<div><span class="k">Cobrar LIO do convênio</span>${data.cobrarLioConvenio === 'sim' ? 'Sim' : 'Não'}</div>` : ''}
+        ${data.crmMedico ? `<div><span class="k">CRM do médico</span>${data.crmMedico}</div>` : ''}
+        ${data.dataNascimento ? `<div><span class="k">Data de nascimento</span>${fmtDate(data.dataNascimento)}</div>` : ''}
+        ${data.cpfPaciente ? `<div><span class="k">CPF</span>${data.cpfPaciente}</div>` : ''}
+        ${data.nomeMae ? `<div><span class="k">Nome da mãe</span>${data.nomeMae}</div>` : ''}
+        ${data.telefonePaciente ? `<div><span class="k">Telefone</span>${data.telefonePaciente}</div>` : ''}
+        ${data.emailPaciente ? `<div><span class="k">E-mail do paciente</span>${data.emailPaciente}</div>` : ''}
+        ${(data.enderecoRua || data.enderecoCidade) ? `<div><span class="k">Endereço</span>${[data.enderecoRua, data.enderecoNumero, data.enderecoComplemento].filter(Boolean).join(', ')}${data.enderecoBairro ? ' — ' + data.enderecoBairro : ''}${data.enderecoCidade ? ' — ' + data.enderecoCidade : ''}${data.enderecoUf ? '/' + data.enderecoUf : ''}${data.enderecoCep ? ' — CEP ' + data.enderecoCep : ''}</div>` : ''}
+        ${data.procedimentoSecundario ? `<div><span class="k">Procedimento secundário</span>${data.procedimentoSecundario}</div>` : ''}
+        ${data.tempoCirurgicoPrevisto ? `<div><span class="k">Tempo cirúrgico previsto</span>${data.tempoCirurgicoPrevisto}</div>` : ''}
+        ${data.tecnicaAnestesica ? `<div><span class="k">Técnica anestésica</span>${data.tecnicaAnestesica}</div>` : ''}
+        ${data.equipeAnestesiaSaj ? `<div><span class="k">Equipe de anestesia SAJ</span>${data.equipeAnestesiaSaj === 'sim' ? 'Sim' : 'Não'}</div>` : ''}
+        ${data.materialEspecial === 'sim' ? `<div><span class="k">Material/instrumental especial</span>Sim${data.materialEspecialDetalhe ? ' — ' + data.materialEspecialDetalhe : ''}</div>` : ''}
+        ${data.examesPreOp ? `<div><span class="k">Exames pré-operatórios realizados</span>${data.examesPreOp === 'sim' ? 'Sim' : 'Não'}</div>` : ''}
+        ${data.alergiaLatex ? `<div><span class="k">Alergia a látex</span>${data.alergiaLatex === 'sim' ? 'Sim' : 'Não'}</div>` : ''}
+        ${data.alergiaOutros ? `<div><span class="k">Outras alergias</span>${data.alergiaOutros}</div>` : ''}
+        ${data.necessidadeEspecial ? `<div><span class="k">Necessidade de atendimento especial</span>${data.necessidadeEspecial}</div>` : ''}
+        ${data.preferenciaHorario ? `<div><span class="k">Preferência de horário</span>${data.preferenciaHorario}</div>` : ''}
         ${(data.status !== 'autorizada' && data.status !== 'aguardando_agendamento' && data.dataCirurgia) ? `<div><span class="k">Data da cirurgia</span>${fmtDate(data.dataCirurgia)}</div>` : ''}
         ${isRateadoComCarlo(data) ? `<div><span class="k">Realizou</span>${data.medicoRealizou} <b style="color:var(--accent);">(rateio 50/50)</b></div>` : (data.status !== 'autorizada' && data.status !== 'aguardando_agendamento' && data.medicoRealizou) ? `<div><span class="k">Realizou</span>${data.medicoRealizou}</div>` : ''}
         ${(data.status !== 'autorizado_convenio' && data.pacoteStatus) ? `<div><span class="k">Pacote</span>${data.pacoteStatus === 'autorizado' ? ('Autorizado' + (data.pacote ? ' — ' + data.pacote : '')) : 'Sem pacote'}</div>` : ''}
