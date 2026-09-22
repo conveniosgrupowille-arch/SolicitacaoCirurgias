@@ -1759,6 +1759,10 @@ function _podeMexerNaAutorizacao(entry){
 }
 
 function canSetStatus(newStatus, entry){
+  // Pedido 22/09/2026: Faturamento HUB e Autorização HUB têm que poder colocar/ver
+  // qualquer entrada em qualquer estágio, sem as restrições por identidade abaixo
+  // (que continuam valendo pra médico/secretária, Centro Cirúrgico e Financeiro HUB).
+  if(secretaryName === 'Faturamento HUB' || secretaryName === 'Autorização HUB') return true;
   if(newStatus === 'aguardando_autorizacao') return true;
   if(newStatus === 'procedimento_autorizado') return _podeMexerNaAutorizacao(entry);
   if(newStatus === 'pacote_solicitado') return _podeMexerNaAutorizacao(entry);
