@@ -3324,7 +3324,7 @@ function renderEntries(entries, containerEl, onChanged){
       <div class="entry-top entry-top-clickable" data-toggle-details="${id}">
         <div>
           <div class="entry-medico ${validadeGuiaClass(data)}">${data.paciente || '—'}${validadeGuiaAviso(data) ? ` <span style="font-size:11px; font-weight:600; color:${validadeGuiaClass(data) === 'guia-vencida' ? '#C0392B' : '#B8860B'};">(${validadeGuiaAviso(data)})</span>` : ''}</div>
-          <div class="entry-date">${data.medico || '—'} · enviado em ${dtStr}${data.enviadoPor ? ' · por ' + data.enviadoPor : ''}</div>
+          <div class="entry-date">${data.medico || '—'} · ${data.convenio || '—'} · enviado em ${dtStr}${data.enviadoPor ? ' · por ' + data.enviadoPor : ''}</div>
         </div>
         <span class="badge ${STAGE_BADGE_CLASS[data.status]}">${statusLabelFor(data)}</span>
         ${data.glosa ? '<span class="badge" style="background:var(--pending-bg); color:var(--pending); margin-left:6px;">⚠ Glosa/Recusada</span>' : ''}
