@@ -77,32 +77,8 @@
     }
     .app-main{ margin-left:0; padding:20px 16px 48px; }
   }
-  .historico-layout{
-    display:flex;
-    gap:24px;
-    align-items:flex-start;
-  }
-  .historico-sidebar{
-    display:flex;
-    flex-direction:column;
-    gap:6px;
-    min-width:210px;
-    flex-shrink:0;
-  }
-  .historico-sidebar .filter-chip{
-    text-align:left;
-    width:100%;
-    box-sizing:border-box;
-  }
-  .historico-main{
-    flex:1;
-    min-width:0;
-  }
   @media (max-width:520px){
     #view-historico{ padding:0 12px; }
-    .historico-layout{ flex-direction:column; }
-    .historico-sidebar{ flex-direction:row; flex-wrap:wrap; min-width:0; width:100%; }
-    .historico-sidebar .filter-chip{ width:auto; }
   }
 
   header{display:flex;align-items:center;gap:10px;margin-bottom:28px;}
@@ -123,6 +99,14 @@
     white-space:nowrap;
   }
   header p{margin:2px 0 0; font-size:11px; color:var(--ink-muted); white-space:nowrap;}
+  .content-header{ text-align:center; margin-bottom:20px; }
+  .content-header h2{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:20px;
+    margin:0;
+    color:var(--primary);
+  }
 
   nav.tabs{
     display:flex;
@@ -1067,6 +1051,9 @@
   </nav>
 </aside>
 <div class="app-main">
+<div class="content-header no-print">
+  <h2>Registro de Cirurgias</h2>
+</div>
 <div class="wrap">
   <div id="view-home">
     <div id="loginGate-home" class="no-print"></div>
@@ -1641,15 +1628,13 @@
           <button class="btn-small primary" id="exportBtn">Exportar .html</button>
         </div>
       </div>
-      <div class="historico-layout">
-        <div class="filter-row historico-sidebar no-print" id="stageFilterRow"></div>
-        <div class="historico-main">
-          <div class="fin-filters no-print" id="histDoctorFilterRow" style="display:none;">
-            <select id="histDoctorSelect"></select>
+      <div class="historico-main">
+          <div class="fin-filters no-print" id="histDoctorFilterRow">
+            <select id="stageSelect"></select>
+            <select id="histDoctorSelect" style="display:none;"></select>
           </div>
           <div id="historicoList"></div>
           <div id="histGrandTotal" class="print-only-grandtotal"></div>
-        </div>
       </div>
     </div>
   </div>
@@ -2513,7 +2498,7 @@ function openHistoricoTab(stage, btn){
   }else if(stage){
     activeStage = stage;
   }
-  renderStageChips();
+  renderStageSelect();
   if(!secretaryName){
     document.getElementById('identityStatus-historico').innerHTML = '';
     content.style.display = 'none';
@@ -3871,14 +3856,13 @@ let activeDoctorFilter = 'todos';
 let histDoctorFilterInitialized = false;
 
 function renderHistDoctorFilter(){
-  const row = document.getElementById('histDoctorFilterRow');
   const sel = document.getElementById('histDoctorSelect');
   if(secretaryDoctors.length > 0){
-    row.style.display = 'none';
+    sel.style.display = 'none';
     activeDoctorFilter = 'todos';
     return;
   }
-  row.style.display = 'flex';
+  sel.style.display = '';
   if(!histDoctorFilterInitialized){
     sel.innerHTML = '<option value="todos">Todos os médicos</option>' +
       doctors.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
@@ -3893,35 +3877,33 @@ function renderHistDoctorFilter(){
 
 const ESTAGIOS_FATURAMENTO = ['concluida','paga','pagamento_efetuado'];
 
-function renderStageChips(){
-  // Pedido 22/09/2026: lista vertical (não dropdown) ao lado do filtro de médico -
-  // usa a mesma sidebar de sempre (.historico-sidebar/.filter-chip); o bug real era
-  // o breakpoint de 860px colapsando pra linha horizontal já na largura do card do CRM.
-  // Pedido 22/09/2026 (2): não faz sentido mostrar estágio de autorização
-  // dentro da aba Faturamento (e vice-versa) - filtra pela aba de topo ativa.
-  const row = document.getElementById('stageFilterRow');
-  row.innerHTML = '';
-  if(secretaryName === CENTRO_CIRURGICO_NOME) return;
+function renderStageSelect(){
+  // Pedido 22/09/2026: menu suspenso (não lista) ao lado do filtro de médico -
+  // não faz sentido mostrar estágio de autorização dentro da aba Faturamento
+  // (e vice-versa) - filtra pela aba de topo ativa.
+  const sel = document.getElementById('stageSelect');
+  if(secretaryName === CENTRO_CIRURGICO_NOME){ sel.style.display = 'none'; return; }
+  sel.style.display = '';
   const emFaturamento = tabFaturamentoBtn.classList.contains('active');
   const estagiosVisiveis = STATUS_STAGES.filter(stage =>
     emFaturamento ? ESTAGIOS_FATURAMENTO.includes(stage) : !ESTAGIOS_FATURAMENTO.includes(stage)
   );
   const seenLabels = new Set();
+  const opcoes = [];
   estagiosVisiveis.forEach(stage=>{
     const label = STAGE_MENU_LABELS[stage];
     if(seenLabels.has(label)) return;
     seenLabels.add(label);
-    const isActive = STAGE_MENU_LABELS[activeStage] === label;
-    const chip = document.createElement('button');
-    chip.className = 'filter-chip' + (isActive ? ' active' : '');
-    chip.textContent = label;
-    chip.addEventListener('click', ()=>{
-      activeStage = stage;
-      renderStageChips();
-      loadHistorico();
-    });
-    row.appendChild(chip);
+    opcoes.push({stage, label});
   });
+  sel.innerHTML = opcoes.map(o => `<option value="${o.stage}">${o.label}</option>`).join('');
+  const correspondente = opcoes.find(o => STAGE_MENU_LABELS[o.stage] === STAGE_MENU_LABELS[activeStage]);
+  sel.value = correspondente ? correspondente.stage : (opcoes[0] && opcoes[0].stage);
+  if(correspondente === undefined && opcoes[0]) activeStage = opcoes[0].stage;
+  sel.onchange = ()=>{
+    activeStage = sel.value;
+    loadHistorico();
+  };
 }
 
 async function loadHistorico(){
