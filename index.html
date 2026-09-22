@@ -3891,15 +3891,23 @@ function renderHistDoctorFilter(){
   sel.value = activeDoctorFilter;
 }
 
+const ESTAGIOS_FATURAMENTO = ['concluida','paga','pagamento_efetuado'];
+
 function renderStageChips(){
   // Pedido 22/09/2026: lista vertical (não dropdown) ao lado do filtro de médico -
   // usa a mesma sidebar de sempre (.historico-sidebar/.filter-chip); o bug real era
   // o breakpoint de 860px colapsando pra linha horizontal já na largura do card do CRM.
+  // Pedido 22/09/2026 (2): não faz sentido mostrar estágio de autorização
+  // dentro da aba Faturamento (e vice-versa) - filtra pela aba de topo ativa.
   const row = document.getElementById('stageFilterRow');
   row.innerHTML = '';
   if(secretaryName === CENTRO_CIRURGICO_NOME) return;
+  const emFaturamento = tabFaturamentoBtn.classList.contains('active');
+  const estagiosVisiveis = STATUS_STAGES.filter(stage =>
+    emFaturamento ? ESTAGIOS_FATURAMENTO.includes(stage) : !ESTAGIOS_FATURAMENTO.includes(stage)
+  );
   const seenLabels = new Set();
-  STATUS_STAGES.forEach(stage=>{
+  estagiosVisiveis.forEach(stage=>{
     const label = STAGE_MENU_LABELS[stage];
     if(seenLabels.has(label)) return;
     seenLabels.add(label);
