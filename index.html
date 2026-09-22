@@ -1948,11 +1948,13 @@ const doctors = [
   {name:'Alexandre Bomfim Rodrigues', color:'#B0554D'},
   {name:'Amilton Irigaray',      color:'#8B6F47'},
   {name:'Carlo de Castro Wille', color:'#1F5C58'},
+  {name:'Cassia Senger',         color:'#A6763E'},
   {name:'Eduardo Becker',        color:'#4A5C7B'},
   {name:'Joao Deitrich',         color:'#C0873C'},
   {name:'Jose Eduardo Cassou',   color:'#5C7B5E'},
   {name:'Mariana Corte Real',    color:'#7B5E7B'}
 ];
+doctors.sort((a,b)=> a.name.localeCompare(b.name, 'pt-BR')); // sempre em ordem alfabética
 
 function initials(name){
   const parts = name.split(' ').filter(p => p.length > 2 || p === p.toUpperCase());
@@ -2114,7 +2116,7 @@ function updateNavForIdentity(){
 
 function loginOptionsHtml(){
   const doctorOptions = doctors.map(d=>`<option value="${d.name}">${d.name}</option>`).join('');
-  const hubOptions = HUB_IDENTITIES
+  const hubOptions = HUB_IDENTITIES.slice().sort((a,b)=> a.localeCompare(b, 'pt-BR'))
     .map(h=>`<option value="${h}">${h}</option>`).join('');
   return `<option value="" disabled selected>Selecione…</option>
     <optgroup label="Médicos">${doctorOptions}</optgroup>
@@ -2205,59 +2207,62 @@ function slug(name){ return name.replace(/\s+/g,''); }
 
 function renderDoctorGrid(){
   doctorGrid.innerHTML = '';
-  const visibleDoctors = secretaryDoctors.length
+  const visibleDoctors = (secretaryDoctors.length
     ? doctors.filter(d => secretaryDoctors.includes(d.name))
-    : doctors;
+    : doctors
+  ).slice().sort((a,b)=> a.name.localeCompare(b.name, 'pt-BR'));
   if(visibleDoctors.length === 0){
-    doctorGrid.innerHTML = '<div class="empty" style="grid-column:1/-1;">Nenhum médico disponível para este acesso.</div>';
+    doctorGrid.innerHTML = '<div class="empty">Nenhum médico disponível para este acesso.</div>';
     return;
   }
-  visibleDoctors.forEach(doc=>{
-    const card = document.createElement('div');
-    card.className = 'doctor-card';
-    renderDoctorCardDefault(card, doc);
-    doctorGrid.appendChild(card);
+  doctorGrid.innerHTML = `
+    <div class="field" style="margin-bottom:0;">
+      <label for="doctorSelectMenu">Selecione o médico</label>
+      <select id="doctorSelectMenu">
+        <option value="" disabled selected>Selecione…</option>
+        ${visibleDoctors.map(d=>`<option value="${d.name}">${d.name}</option>`).join('')}
+      </select>
+    </div>
+    <div id="doctorSelectAction" style="margin-top:12px;"></div>
+  `;
+  document.getElementById('doctorSelectMenu').addEventListener('change', (e)=>{
+    const doc = visibleDoctors.find(d => d.name === e.target.value);
+    if(doc) renderDoctorSelectAction(doc);
   });
 }
 
-function renderDoctorCardDefault(card, doc){
-  card.style.cursor = 'pointer';
-  card.innerHTML = `
-    <div class="doctor-avatar" style="background:${doc.color}">${initials(doc.name)}</div>
-    <div>
-      <div class="doctor-name">${doc.name}</div>
-      <div class="doctor-cta" style="cursor:pointer;">Toque para entrar →</div>
-    </div>
-  `;
-  card.onclick = ()=> handleDoctorCardClick(card, doc);
-}
-
-function handleDoctorCardClick(card, doc){
+function renderDoctorSelectAction(doc){
+  const action = document.getElementById('doctorSelectAction');
   const jaAutenticado = secretaryName && (secretaryDoctors.length === 0 || secretaryDoctors.includes(doc.name));
   if(jaAutenticado){
-    openForm(doc);
+    action.innerHTML = `
+      <div class="doctor-card" style="cursor:pointer;" id="doctorEnterCard">
+        <div class="doctor-avatar" style="background:${doc.color}">${initials(doc.name)}</div>
+        <div>
+          <div class="doctor-name">${doc.name}</div>
+          <div class="doctor-cta">Toque para entrar →</div>
+        </div>
+      </div>
+    `;
+    document.getElementById('doctorEnterCard').addEventListener('click', ()=> openForm(doc));
     return;
   }
-  renderDoctorCardPasswordForm(card, doc);
-}
-
-function renderDoctorCardPasswordForm(card, doc){
-  card.onclick = null;
   const id = slug(doc.name);
-  card.innerHTML = `
-    <div class="doctor-avatar" style="background:${doc.color}">${initials(doc.name)}</div>
-    <div style="width:100%;">
-      <div class="doctor-name">${doc.name}</div>
-      <form class="identity-form" id="cardLogin-${id}" onsubmit="return false;" style="margin-top:8px;">
-        <input type="password" placeholder="Senha" id="cardPass-${id}" style="width:100%;">
-        <button type="submit">Entrar</button>
-      </form>
-      <button type="button" class="identity-edit" id="cardCancel-${id}" style="margin-top:6px;">cancelar</button>
+  action.innerHTML = `
+    <div class="doctor-card">
+      <div class="doctor-avatar" style="background:${doc.color}">${initials(doc.name)}</div>
+      <div style="width:100%;">
+        <div class="doctor-name">${doc.name}</div>
+        <form class="identity-form" id="selectLogin-${id}" onsubmit="return false;" style="margin-top:8px;">
+          <input type="password" placeholder="Senha" id="selectPass-${id}" style="width:100%;">
+          <button type="submit">Entrar</button>
+        </form>
+      </div>
     </div>
   `;
   const submitHandler = async (e)=>{
     if(e && e.preventDefault) e.preventDefault();
-    const passEl = document.getElementById('cardPass-' + id);
+    const passEl = document.getElementById('selectPass-' + id);
     const pass = passEl ? passEl.value : '';
     const result = await verifyLogin(doc.name, pass);
     if(result){
@@ -2269,14 +2274,11 @@ function renderDoctorCardPasswordForm(card, doc){
     }
     return false;
   };
-  const formEl = document.getElementById('cardLogin-' + id);
+  const formEl = document.getElementById('selectLogin-' + id);
   formEl.addEventListener('submit', submitHandler);
   formEl.querySelector('button[type=submit]').addEventListener('click', (e)=>{
     e.preventDefault();
     submitHandler(e);
-  });
-  document.getElementById('cardCancel-' + id).addEventListener('click', ()=>{
-    renderDoctorCardDefault(card, doc);
   });
 }
 
