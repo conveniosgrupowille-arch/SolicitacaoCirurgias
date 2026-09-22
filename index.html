@@ -48,7 +48,7 @@
   .app-sidebar{
     position:fixed;
     top:0; left:0; bottom:0;
-    width:220px;
+    width:236px;
     background:var(--surface);
     border-right:1px solid var(--border);
     padding:24px 18px;
@@ -57,7 +57,7 @@
     z-index:10;
   }
   .app-main{
-    margin-left:220px;
+    margin-left:236px;
     padding:32px 24px 64px;
     box-sizing:border-box;
   }
@@ -67,7 +67,7 @@
     margin:0 auto;
     box-sizing:border-box;
   }
-  @media (max-width:860px){
+  @media (max-width:520px){
     .app-sidebar{
       position:relative;
       width:100%;
@@ -98,30 +98,31 @@
     flex:1;
     min-width:0;
   }
-  @media (max-width:860px){
+  @media (max-width:520px){
     #view-historico{ padding:0 12px; }
     .historico-layout{ flex-direction:column; }
     .historico-sidebar{ flex-direction:row; flex-wrap:wrap; min-width:0; width:100%; }
     .historico-sidebar .filter-chip{ width:auto; }
   }
 
-  header{display:flex;align-items:center;gap:12px;margin-bottom:28px;}
+  header{display:flex;align-items:center;gap:10px;margin-bottom:28px;}
   .iris{
-    width:44px;height:44px;flex:none;border-radius:50%;
+    width:34px;height:34px;flex:none;border-radius:50%;
     background:
-      radial-gradient(circle at 50% 50%, var(--primary) 0 6px, transparent 6.5px),
+      radial-gradient(circle at 50% 50%, var(--primary) 0 5px, transparent 5.5px),
       conic-gradient(from 0deg, var(--primary-light), var(--accent), var(--primary-light));
-    box-shadow: inset 0 0 0 3px var(--surface), 0 0 0 1px var(--border);
+    box-shadow: inset 0 0 0 2px var(--surface), 0 0 0 1px var(--border);
   }
   h1{
     font-family:'Fraunces',serif;
     font-weight:600;
-    font-size:26px;
+    font-size:15px;
     margin:0;
     letter-spacing:-0.01em;
     color:var(--primary);
+    white-space:nowrap;
   }
-  header p{margin:2px 0 0; font-size:13px; color:var(--ink-muted);}
+  header p{margin:2px 0 0; font-size:11px; color:var(--ink-muted); white-space:nowrap;}
 
   nav.tabs{
     display:flex;
@@ -157,7 +158,7 @@
     background:var(--primary);
     color:#fff;
   }
-  @media (max-width:860px){
+  @media (max-width:520px){
     nav.tabs{ flex-direction:row; flex-wrap:wrap; }
     nav.tabs button{ width:auto; flex:1; min-width:100px; text-align:center; }
   }
@@ -1641,12 +1642,10 @@
         </div>
       </div>
       <div class="historico-layout">
+        <div class="filter-row historico-sidebar no-print" id="stageFilterRow"></div>
         <div class="historico-main">
-          <div class="fin-filters no-print" id="histFiltersRow">
-            <select id="stageFilterRow"></select>
-            <div id="histDoctorFilterRow" style="display:none;">
-              <select id="histDoctorSelect"></select>
-            </div>
+          <div class="fin-filters no-print" id="histDoctorFilterRow" style="display:none;">
+            <select id="histDoctorSelect"></select>
           </div>
           <div id="historicoList"></div>
           <div id="histGrandTotal" class="print-only-grandtotal"></div>
@@ -3893,27 +3892,28 @@ function renderHistDoctorFilter(){
 }
 
 function renderStageChips(){
-  // Pedido 22/09/2026: era uma fileira de chips (empilhava em várias linhas em tela
-  // estreita, como a do card embutido no CRM) - virou <select>, ao lado do filtro de médico.
-  const sel = document.getElementById('stageFilterRow');
-  sel.innerHTML = '';
-  if(secretaryName === CENTRO_CIRURGICO_NOME){ sel.style.display = 'none'; return; }
-  sel.style.display = '';
+  // Pedido 22/09/2026: lista vertical (não dropdown) ao lado do filtro de médico -
+  // usa a mesma sidebar de sempre (.historico-sidebar/.filter-chip); o bug real era
+  // o breakpoint de 860px colapsando pra linha horizontal já na largura do card do CRM.
+  const row = document.getElementById('stageFilterRow');
+  row.innerHTML = '';
+  if(secretaryName === CENTRO_CIRURGICO_NOME) return;
   const seenLabels = new Set();
   STATUS_STAGES.forEach(stage=>{
     const label = STAGE_MENU_LABELS[stage];
     if(seenLabels.has(label)) return;
     seenLabels.add(label);
-    const opt = document.createElement('option');
-    opt.value = stage;
-    opt.textContent = label;
-    if(STAGE_MENU_LABELS[activeStage] === label) opt.selected = true;
-    sel.appendChild(opt);
+    const isActive = STAGE_MENU_LABELS[activeStage] === label;
+    const chip = document.createElement('button');
+    chip.className = 'filter-chip' + (isActive ? ' active' : '');
+    chip.textContent = label;
+    chip.addEventListener('click', ()=>{
+      activeStage = stage;
+      renderStageChips();
+      loadHistorico();
+    });
+    row.appendChild(chip);
   });
-  sel.onchange = ()=>{
-    activeStage = sel.value;
-    loadHistorico();
-  };
 }
 
 async function loadHistorico(){
