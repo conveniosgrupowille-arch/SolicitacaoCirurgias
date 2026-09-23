@@ -724,6 +724,8 @@
   .badge.st-concluida{background:var(--accent-soft); color:#8B6F2F;}
   .badge.st-paga{background:var(--done-bg); color:var(--done);}
   .badge.st-pagamento_efetuado{background:var(--done); color:#fff;}
+  .badge.st-retoque{background:#E4EAF3; color:#4A5C7B;}
+  .badge.st-cortesia{background:#EDE7F6; color:#5E4B8B;}
 
   .identity-bar{
     display:flex;
@@ -1746,7 +1748,7 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let allEntriesCache = null;
 
-const STATUS_STAGES = ['aguardando_autorizacao','procedimento_autorizado','pacote_solicitado','autorizado_convenio','aguardando_agendamento','autorizada','concluida','paga','pagamento_efetuado'];
+const STATUS_STAGES = ['aguardando_autorizacao','procedimento_autorizado','pacote_solicitado','autorizado_convenio','aguardando_agendamento','autorizada','concluida','paga','pagamento_efetuado','retoque','cortesia'];
 const STATUS_LABELS = {
   aguardando_autorizacao: 'Pendente de autorização',
   procedimento_autorizado: 'Procedimento Autorizado',
@@ -1756,7 +1758,9 @@ const STATUS_LABELS = {
   autorizada: 'Confirmada Agendada',
   concluida: 'Aguardando Pagamento do Convênio',
   paga: 'Aguardando Repasse do Hospital',
-  pagamento_efetuado: 'Repasse Efetuado'
+  pagamento_efetuado: 'Repasse Efetuado',
+  retoque: 'Retoque (sem cobrança)',
+  cortesia: 'Cortesia (sem cobrança)'
 };
 const STAGE_MENU_LABELS = {
   aguardando_autorizacao: 'Solicitadas',
@@ -1767,7 +1771,9 @@ const STAGE_MENU_LABELS = {
   autorizada: 'Aguardando cirurgia',
   concluida: 'Aguardando Pagamento do Convênio',
   paga: 'Aguardando Repasse do Hospital',
-  pagamento_efetuado: 'Repasse Efetuado'
+  pagamento_efetuado: 'Repasse Efetuado',
+  retoque: 'Retoque',
+  cortesia: 'Cortesia'
 };
 const STAGE_BADGE_CLASS = {
   aguardando_autorizacao: 'st-aguardando_autorizacao',
@@ -1778,7 +1784,9 @@ const STAGE_BADGE_CLASS = {
   autorizada: 'st-autorizada',
   concluida: 'st-concluida',
   paga: 'st-paga',
-  pagamento_efetuado: 'st-pagamento_efetuado'
+  pagamento_efetuado: 'st-pagamento_efetuado',
+  retoque: 'st-retoque',
+  cortesia: 'st-cortesia'
 };
 const RESTRICTED_STAGES = { pagamento_efetuado: 'Financeiro HUB' };
 const CARLO_NOME = 'Carlo de Castro Wille';
@@ -1802,6 +1810,7 @@ function canSetStatus(newStatus, entry){
   if(newStatus === 'aguardando_agendamento') return secretaryName === entry.medico || secretaryName === 'Autorização HUB';
   if(newStatus === 'autorizada') return secretaryName === entry.medico || secretaryName === 'Autorização HUB';
   if(newStatus === 'concluida') return secretaryName === entry.medico || secretaryName === 'Autorização HUB' || secretaryName === CENTRO_CIRURGICO_NOME;
+  if(newStatus === 'retoque' || newStatus === 'cortesia') return secretaryName === entry.medico || secretaryName === 'Autorização HUB' || secretaryName === CENTRO_CIRURGICO_NOME;
   if(newStatus === 'paga') return secretaryName === 'Faturamento HUB' || secretaryName === 'Financeiro HUB';
   if(newStatus === 'pagamento_efetuado') return secretaryName === RESTRICTED_STAGES.pagamento_efetuado;
   return true;
@@ -2728,7 +2737,7 @@ function fmtDate(iso){
 
 // Sinaliza validade da guia em qualquer etapa antes de virar "Aguardando Pagamento do Convênio"
 // (ou seja, enquanto a cirurgia ainda não aconteceu/foi faturada) -- vermelho se já venceu, amarelo se faltam 7 dias ou menos.
-const STATUS_SEM_AVISO_VALIDADE = ['concluida', 'paga', 'pagamento_efetuado'];
+const STATUS_SEM_AVISO_VALIDADE = ['concluida', 'paga', 'pagamento_efetuado', 'retoque', 'cortesia'];
 function validadeGuiaClass(entry){
   if(STATUS_SEM_AVISO_VALIDADE.includes(entry.status) || !entry.validadeGuia) return '';
   const hoje = new Date(); hoje.setHours(0,0,0,0);
@@ -3916,7 +3925,10 @@ function renderHistDoctorFilter(){
   sel.value = activeDoctorFilter;
 }
 
-const ESTAGIOS_FATURAMENTO = ['concluida','paga','pagamento_efetuado'];
+// Retoque e Cortesia (23/09/2026, pedido do usuário) são procedimentos sem
+// cobrança - não passam por convênio/repasse, mas ficam junto do menu de
+// Faturamento (não em Solicitadas) porque já são casos encerrados.
+const ESTAGIOS_FATURAMENTO = ['concluida','paga','pagamento_efetuado','retoque','cortesia'];
 
 function renderStageSelect(){
   // Pedido 22/09/2026: menu suspenso (não lista) ao lado do filtro de médico -
