@@ -2605,6 +2605,7 @@ tabFinBtn.addEventListener('click', ()=> { allEntriesCache = null; openFinTab();
 const PACOTES_CIRURGIAS = [
   {"codigo": "30309000", "desc": "PACOTE VITRECTOMIA VIAS PARS PLANA+FACECTOMIA COM LENTE INTRA-OCULAR COM FACOEMULSIFICAÇÃO", "convenio": "UNIMED", "principal": "30307120", "alternativos": ["30306027", "30307066", "30312086", "30312094"]},
   {"codigo": "30309808", "desc": "PACOTE DE VITRECTOMIA VIAS PARS PLANA+ENDOLASER/ENDODIATERMIA+TROCA DE FLUIDO GASOSA+RETIRADA DE ÓLEO", "convenio": "UNIMED", "principal": "30307120", "alternativos": ["30307031", "30307090", "30307082"]},
+  {"codigo": "30309808", "desc": "PACOTE DE VITRECTOMIA VIAS PARS PLANA+ENDOLASER/ENDODIATERMIA+RETINOPEXIA COM INTROFLEXÃO ESCLERAL", "itemCodes": ["30307120", "30307031", "30312086"], "convenio": "UNIMED"},
   {"codigo": "50038036", "desc": "PACOTE DE PTERÍGIO - EXÉRESE + TRANSPLANTE DE CONJUNTIVA", "itemCodes": ["30303010", "30303060"], "convenio": "UNIMED"},
   {"codigo": "50049100", "desc": "PACOTE DE PKR - TRADICIONAL", "itemCodes": ["30304091", "30304105"], "convenio": "UNIMED"},
   {"codigo": "50079069", "desc": "PACOTE DE VITRECTOMIA VIA PARS PLANA+ENDOLASER/ENDODIATERMIA+IMPLANTE DE SILICONE INTRAVITREO", "convenio": "UNIMED", "principal": "30307120", "alternativos": ["30307031", "30307040"]},
@@ -2685,9 +2686,17 @@ function extrairCodigosTuss(procedimentoStr){
     .filter(Boolean);
 }
 
-function pacoteTamanho(p){
-  if(p.itemCodes) return p.itemCodes.length;
-  if(p.principal && p.alternativos) return 1 + p.alternativos.length;
+function pacoteTamanho(p, codeSet){
+  // "tamanho" real = quantos códigos desse pacote realmente aparecem no conjunto selecionado
+  // (não o tamanho máximo possível) - assim um pacote genérico "principal+1 alternativo" não
+  // ganha de um pacote mais específico que casa com TODOS os seus códigos (ex: Vitrectomia+
+  // Endolaser+Retinopexia juntos tem que casar com o pacote dos 3, não com um pacote genérico
+  // que só usaria 2 deles).
+  if(p.itemCodes) return p.itemCodes.filter(c => codeSet.has(c)).length;
+  if(p.principal && p.alternativos){
+    if(!codeSet.has(p.principal)) return 0;
+    return 1 + p.alternativos.filter(c => codeSet.has(c)).length;
+  }
   return 0;
 }
 
@@ -2696,7 +2705,7 @@ function pacoteTamanho(p){
 function findMatchedPacotes(effectiveCodes, convenio){
   const remaining = new Set(effectiveCodes);
   const pool = PACOTES_CIRURGIAS.filter(p => p.convenio === convenio);
-  const sorted = pool.slice().sort((a, b) => pacoteTamanho(b) - pacoteTamanho(a));
+  const sorted = pool.slice().sort((a, b) => pacoteTamanho(b, remaining) - pacoteTamanho(a, remaining));
   const matched = [];
   sorted.forEach(p => {
     if(p.principal && p.alternativos){
