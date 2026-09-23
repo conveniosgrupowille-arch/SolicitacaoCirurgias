@@ -1643,8 +1643,11 @@
               <select id="histConvenioSelect"></select>
             </div>
             <div class="field" style="margin-bottom:0; flex:1; min-width:140px;" id="histDoctorFieldWrap">
-              <label for="histDoctorSelect">Médicos</label>
-              <select id="histDoctorSelect" style="display:none;"></select>
+              <label for="histDoctorTrigger">Médicos</label>
+              <div class="multiselect" id="histDoctorMultiselect" style="display:none;">
+                <button type="button" class="multiselect-trigger" id="histDoctorTrigger">Todos os médicos</button>
+                <div class="multiselect-panel" id="histDoctorPanel" style="display:none;"></div>
+              </div>
             </div>
         </div>
       </div>
@@ -3895,7 +3898,7 @@ function renderEntries(entries, containerEl, onChanged){
 }
 
 let activeStage = 'aguardando_autorizacao';
-let activeDoctorFilter = 'todos';
+let activeDoctorFilter = [];
 let activeConvenioFilter = 'todos';
 let histDoctorFilterInitialized = false;
 let histConvenioFilterInitialized = false;
@@ -3916,27 +3919,64 @@ function renderHistConvenioFilter(entries){
   }
 }
 
+function updateHistDoctorTriggerText(){
+  const trigger = document.getElementById('histDoctorTrigger');
+  if(!trigger) return;
+  if(activeDoctorFilter.length === 0){
+    trigger.textContent = 'Todos os médicos';
+  }else if(activeDoctorFilter.length <= 2){
+    trigger.textContent = activeDoctorFilter.join(' + ');
+  }else{
+    trigger.textContent = `${activeDoctorFilter.length} médicos selecionados`;
+  }
+}
+
 function renderHistDoctorFilter(){
-  const sel = document.getElementById('histDoctorSelect');
+  const wrapOuter = document.getElementById('histDoctorMultiselect');
   const wrap = document.getElementById('histDoctorFieldWrap');
   if(secretaryDoctors.length > 0){
-    sel.style.display = 'none';
+    wrapOuter.style.display = 'none';
     if(wrap) wrap.style.display = 'none';
-    activeDoctorFilter = 'todos';
+    activeDoctorFilter = [];
     return;
   }
-  sel.style.display = '';
+  wrapOuter.style.display = '';
   if(wrap) wrap.style.display = '';
   if(!histDoctorFilterInitialized){
-    sel.innerHTML = '<option value="todos">Todos os médicos</option>' +
-      doctors.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
-    sel.addEventListener('change', ()=>{
-      activeDoctorFilter = sel.value;
-      loadHistorico();
+    const panel = document.getElementById('histDoctorPanel');
+    panel.innerHTML = doctors.map(d => `
+      <label class="split-check" style="margin-bottom:8px;">
+        <input type="checkbox" name="histDoctorCheck" value="${d.name}">
+        ${d.name}
+      </label>
+    `).join('') + `<button type="button" class="btn-small primary" id="histDoctorDone" style="width:100%; margin-top:4px;">Concluir</button>`;
+
+    const trigger = document.getElementById('histDoctorTrigger');
+    trigger.addEventListener('click', ()=>{
+      const abrindo = panel.style.display === 'none';
+      panel.style.display = abrindo ? 'block' : 'none';
+    });
+    document.getElementById('histDoctorDone').addEventListener('click', ()=>{
+      panel.style.display = 'none';
+    });
+    panel.querySelectorAll('input[name=histDoctorCheck]').forEach(chk=>{
+      chk.addEventListener('change', ()=>{
+        activeDoctorFilter = Array.from(panel.querySelectorAll('input[name=histDoctorCheck]:checked')).map(c=>c.value);
+        updateHistDoctorTriggerText();
+        loadHistorico();
+      });
+    });
+    document.addEventListener('click', (e)=>{
+      if(panel.style.display !== 'none' && !wrapOuter.contains(e.target)){
+        panel.style.display = 'none';
+      }
     });
     histDoctorFilterInitialized = true;
   }
-  sel.value = activeDoctorFilter;
+  document.querySelectorAll('input[name=histDoctorCheck]').forEach(chk=>{
+    chk.checked = activeDoctorFilter.includes(chk.value);
+  });
+  updateHistDoctorTriggerText();
 }
 
 // Retoque e Cortesia (23/09/2026, pedido do usuário) são procedimentos sem
@@ -3986,8 +4026,8 @@ async function loadHistorico(){
     let entries = await fetchAllEntries();
     entries = entries.filter(d => secretaryDoctors.length === 0 || secretaryDoctors.includes(d.medico));
     renderHistConvenioFilter(entries);
-    if(activeDoctorFilter !== 'todos'){
-      entries = entries.filter(d => d.medico === activeDoctorFilter);
+    if(activeDoctorFilter.length > 0){
+      entries = entries.filter(d => activeDoctorFilter.includes(d.medico));
     }
     if(activeConvenioFilter !== 'todos'){
       entries = entries.filter(d => (d.convenio || '').trim() === activeConvenioFilter);
@@ -4116,8 +4156,8 @@ document.getElementById('exportBtn').addEventListener('click', async ()=>{
     if(secretaryDoctors.length){
       entries = entries.filter(e => secretaryDoctors.includes(e.medico));
     }
-    if(activeDoctorFilter !== 'todos'){
-      entries = entries.filter(e => e.medico === activeDoctorFilter);
+    if(activeDoctorFilter.length > 0){
+      entries = entries.filter(e => activeDoctorFilter.includes(e.medico));
     }
     entries = entries.slice().sort((a,b)=> (dataEfetiva(b)).localeCompare(dataEfetiva(a)) || new Date(b.enviadoEm) - new Date(a.enviadoEm));
 
@@ -4150,7 +4190,7 @@ document.getElementById('exportBtn').addEventListener('click', async ()=>{
         th{background:#123B3A;color:#fff;}
         tr:nth-child(even){background:#F3F6F5;}
       </style></head><body>
-      <h1>Registros de Cirurgias${activeDoctorFilter !== 'todos' ? ' — ' + activeDoctorFilter : ''} — exportado em ${new Date().toLocaleString('pt-BR')}</h1>
+      <h1>Registros de Cirurgias${activeDoctorFilter.length > 0 ? ' — ' + activeDoctorFilter.join(', ') : ''} — exportado em ${new Date().toLocaleString('pt-BR')}</h1>
       <table><thead><tr>
         <th>Médico</th><th>Realizou</th><th>Data solicitação</th><th>Data cirurgia</th><th>Paciente</th>
         <th>Procedimento</th><th>Olho</th><th>Convênio</th><th>Observações</th><th>Enviado por</th>${valorCol}<th>Status</th>
@@ -4161,7 +4201,7 @@ document.getElementById('exportBtn').addEventListener('click', async ()=>{
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    const doctorFileLabel = activeDoctorFilter === 'todos' ? '' : `_${activeDoctorFilter.replace(/\s+/g,'_')}`;
+    const doctorFileLabel = activeDoctorFilter.length === 0 ? '' : `_${activeDoctorFilter.join('_').replace(/\s+/g,'_')}`;
     a.download = `registros_cirurgias${doctorFileLabel}_${new Date().toISOString().slice(0,10)}.html`;
     document.body.appendChild(a);
     a.click();
