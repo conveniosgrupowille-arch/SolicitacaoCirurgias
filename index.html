@@ -2031,8 +2031,9 @@ const MARIANA_NOME = 'Mariana Corte Real';
 // quando é ela (pedido 23/09/2026).
 function isMariana(doc){ return !!doc && doc.name === MARIANA_NOME; }
 
+const CASSOU_NOME = 'Jose Eduardo Cassou';
 function isRateadoComCarlo(entry){
-  if(entry.medico === IRIGARAY_NOME) return false;
+  if(entry.medico === IRIGARAY_NOME || entry.medico === CASSOU_NOME) return false;
   return entry.medicoRealizou === CARLO_NOME && entry.medico !== CARLO_NOME;
 }
 
